@@ -16,10 +16,16 @@
  */
 package com.alipay.sofa.jraft.graduationdesign.pd;
 
+import com.alipay.sofa.jraft.graduationdesign.Yaml;
+import com.alipay.sofa.jraft.rhea.PlacementDriverServer;
+import com.alipay.sofa.jraft.rhea.metrics.KVMetrics;
+import com.alipay.sofa.jraft.rhea.options.PlacementDriverServerOptions;
+import com.codahale.metrics.ConsoleReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 public class PdServer {
 
@@ -28,5 +34,20 @@ public class PdServer {
     public static void main(String[] args) {
         LOG.info("start pd server...");
         LOG.info("pd args: {}", Arrays.toString(args));
+
+        final String configPath = args[1];
+
+        final PlacementDriverServerOptions opts = Yaml.readPdConfig(configPath);
+
+        final PlacementDriverServer pdServer = new PlacementDriverServer();
+        pdServer.init(opts);
+        pdServer.awaitReady(10000);
+
+        ConsoleReporter.forRegistry(KVMetrics.metricRegistry()) //
+                .build() //
+                .start(30, TimeUnit.SECONDS);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(pdServer::shutdown));
+        LOG.info("Pd Server start OK, options: {}", opts);
     }
 }

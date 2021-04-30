@@ -16,6 +16,7 @@
  */
 package com.alipay.sofa.jraft.graduationdesign;
 
+import com.alipay.sofa.jraft.rhea.options.PlacementDriverServerOptions;
 import com.alipay.sofa.jraft.rhea.options.RheaKVStoreOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -30,19 +31,28 @@ import java.nio.file.Paths;
 public class Yaml {
 
     public static void main(final String[] args) {
-        readConfig(Paths.get("jraft-example", "config", "benchmark_client.yaml").toString());
-        readConfig(Paths.get("jraft-example", "config", "benchmark_server.yaml").toString());
+        readRheaKVStoreConfig(Paths.get("jraft-example", "config", "benchmark_client.yaml").toString());
+        readRheaKVStoreConfig(Paths.get("jraft-example", "config", "benchmark_server.yaml").toString());
     }
 
-    public static RheaKVStoreOptions readConfig(final String name) {
+    public static RheaKVStoreOptions readRheaKVStoreConfig(final String name) {
+        return readConfig(name, RheaKVStoreOptions.class);
+    }
+
+    public static <T> T readConfig(final String name, Class<T> clazz) {
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        final RheaKVStoreOptions opts;
+        final T opts;
         try {
-            opts = mapper.readValue(new File(name), RheaKVStoreOptions.class);
+            opts = mapper.readValue(new File(name), clazz);
             System.out.println(opts);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         return opts;
     }
+
+    public static PlacementDriverServerOptions readPdConfig(final String name) {
+        return readConfig(name, PlacementDriverServerOptions.class);
+    }
+
 }

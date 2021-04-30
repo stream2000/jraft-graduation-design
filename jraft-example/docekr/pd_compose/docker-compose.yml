@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+  pd1:
+    image: rheakv
+    environment:
+      - ROLE=pd
+      - CONFIG_PATH=/jraft/config/pd/pd_1.yaml
+    volumes:
+      - ~/developer/java/framework/sofa-jraft/logs/pd_1:/jraft/log
+    networks:
+      rheakv_cluster:
+        ipv4_address: 172.28.0.10
+  pd2:
+    image: rheakv
+    environment:
+      - ROLE=pd
+      - CONFIG_PATH=/jraft/config/pd/pd_2.yaml
+    volumes:
+      - ~/developer/java/framework/sofa-jraft/logs/pd_2:/jraft/log
+    networks:
+      rheakv_cluster:
+        ipv4_address: 172.28.0.11
+  pd3:
+    image: rheakv
+    environment:
+      - ROLE=pd
+      - CONFIG_PATH=/jraft/config/pd/pd_3.yaml
+    volumes:
+      - ~/developer/java/framework/sofa-jraft/logs/pd_3:/jraft/log
+    networks:
+      rheakv_cluster:
+        ipv4_address: 172.28.0.12
+
+networks:
+  rheakv_cluster:
+    external: true

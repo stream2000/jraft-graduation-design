@@ -1,0 +1,17 @@
+##PlacementDriverServerOptions
+---
+rheaKVStoreOptions:
+  clusterName: pd_test
+
+  placementDriverOptions:
+    fake: true
+
+  storeEngineOptions:
+    rocksDBOptions:
+      dbPath: pd_db/
+    raftDataPath: pd_raft/
+    serverAddress:
+      ip: 172.28.0.12
+      port: 8280
+
+  initialServerList: 172.28.0.10:8280,172.28.0.11:8280,172.28.0.12:8280

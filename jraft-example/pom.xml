@@ -55,6 +55,10 @@
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.databind.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>jraft-rheakv-pd</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
