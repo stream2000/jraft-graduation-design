@@ -1,0 +1,23 @@
+##RheaKVStoreOptions
+---
+clusterId: 111
+clusterName: rhea_pd_test
+
+placementDriverOptions:
+  fake: false
+  pdGroupId: pd_test--1
+  initialPdServerList: 172.28.0.10:8280,172.28.0.11:8280,172.28.0.12:8280
+
+storeEngineOptions:
+  rocksDBOptions:
+    dbPath: rhea_pd_db/
+  raftDataPath: rhea_pd_raft/
+  serverAddress:
+    ip: 172.28.0.22
+    port: 18181
+  regionEngineOptionsList:
+    - { regionId: 1,   endKey: g, initialServerList: "172.28.0.20:18181,172.28.0.21:18181,172.28.0.22:18181" }
+    - { regionId: 2, startKey: g }
+  leastKeysOnSplit: 10
+
+initialServerList: 172.28.0.20:18181,172.28.0.21:18181,172.28.0.22:18181

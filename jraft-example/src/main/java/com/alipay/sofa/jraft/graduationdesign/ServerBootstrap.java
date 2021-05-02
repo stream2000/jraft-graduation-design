@@ -33,9 +33,9 @@ public class ServerBootstrap {
             System.exit(-1);
         }
         final String role = args[2];
-        if ("pd".equals(role)) {
+        if ("pd".equalsIgnoreCase(role)) {
             PdServer.main(args);
-        } else if ("rheakv".equals(role)) {
+        } else if ("rheakv".equalsIgnoreCase(role)) {
             RheaKVServer.main(args);
         } else {
             LOG.error("Invalid args[0]: {}", role);
