@@ -21,22 +21,15 @@ import com.alipay.sofa.jraft.rhea.metadata.Cluster;
 /**
  * @author jiachun.fjc
  */
-public class GetClusterInfoResponse extends BaseResponse {
+public class GetClusterInfoResponse extends BaseResponse<Cluster> {
 
     private static final long serialVersionUID = 8811355826978037463L;
 
-    private Cluster           cluster;
-
-    public Cluster getCluster() {
-        return cluster;
-    }
-
-    public void setCluster(Cluster cluster) {
-        this.cluster = cluster;
-    }
-
-    @Override
-    public String toString() {
+    @Override public String toString() {
+        if (getValue() == null) {
+            return "null";
+        }
+        Cluster cluster = getValue();
         return "GetClusterInfoResponse{" + "cluster=" + cluster + "} " + super.toString();
     }
 }
