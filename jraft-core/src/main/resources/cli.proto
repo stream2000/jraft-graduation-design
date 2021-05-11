@@ -105,13 +105,3 @@ message LearnersOpResponse {
     repeated string new_learners = 2;
     optional ErrorResponse errorResponse = 99;
 }
-
-message SubmitRebuildStoreRequest {
-    required int32 old_store_id = 1;
-    required int32 new_store_id = 2;
-}
-
-message SubmitRebuildStoreResponse {
-    repeated string task_id = 1;
-    optional ErrorResponse errorResponse = 99;
-}
