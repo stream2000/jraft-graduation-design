@@ -16,30 +16,52 @@
  */
 package com.alipay.sofa.jraft.graduationdesign.client;
 
+import com.alipay.sofa.jraft.entity.PeerId;
+import com.alipay.sofa.jraft.rhea.JRaftHelper;
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
 import com.alipay.sofa.jraft.rhea.client.pd.PlacementDriverClient;
 import com.alipay.sofa.jraft.rhea.client.pd.RemotePlacementDriverClient;
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
+import com.alipay.sofa.jraft.rhea.metadata.Store;
 import com.alipay.sofa.jraft.util.Endpoint;
 
 public class PdClient {
     public static void main(String[] args) {
         final Client client = new Client();
         client.init();
-        listClusterInf(client.getRheaKVStore());
+        addPeer(client.getRheaKVStore());
         client.shutdown();
     }
 
-    public static void listClusterInf(final RheaKVStore rheaKVStore) {
+    public static void listClusterInfo(final RheaKVStore rheaKVStore) {
         PlacementDriverClient pdClient = rheaKVStore.getPlacementDriverClient();
         RemotePlacementDriverClient remotePdClient = (RemotePlacementDriverClient) pdClient;
         Endpoint leaderEndpoint = remotePdClient.getPdLeader(true, 10000);
         System.out.println(leaderEndpoint);
         Cluster cluster = remotePdClient.getMetadataRpcClient().getClusterInfo(111);
+        printCluster(cluster);
+    }
+
+    public static void addPeer(final RheaKVStore rheaKVStore) {
+        PlacementDriverClient pdClient = rheaKVStore.getPlacementDriverClient();
+        final PeerId newPeer = new PeerId("127.0.0.1", 18184);
+        pdClient.refreshRouteConfiguration(1);
+        boolean result = pdClient.addReplica(1, JRaftHelper.toPeer(newPeer), true);
+        pdClient.addReplica(1, JRaftHelper.toPeer(newPeer), true);
+        System.out.println("region1 add peer result " + result);
+        result = pdClient.addReplica(2, JRaftHelper.toPeer(newPeer), true);
+        System.out.println("region2 add peer result " + result);
+    }
+
+    static void printCluster(Cluster cluster) {
         if (cluster == null) {
-            System.out.println("the cluster info is null");
+            return;
         }
-        System.out.println(cluster);
+        cluster.getStores().sort((s1, s2) -> (int) (s1.getId() - s2.getId()));
+        System.out.println("cluster id " + cluster.getClusterId());
+        for (Store store : cluster.getStores()) {
+            System.out.println(store);
+        }
     }
 
 }

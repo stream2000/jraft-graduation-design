@@ -40,45 +40,31 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class RheaKVTestCluster {
-    private static final String[]             CONF          = { "/kv/rhea_test_1.yaml", //
-            "/kv/rhea_test_2.yaml", //
-            "/kv/rhea_test_3.yaml" //
-                                                            };
-    private static final NamedThreadFactory   threadFactory = new NamedThreadFactory("heartbeat_test", true);
-    private volatile String                   tempDbPath;
-    private volatile String                   tempRaftPath;
-    private CopyOnWriteArrayList<RheaKVStore> stores        = new CopyOnWriteArrayList<>();
+public class RheaKVTestBootstrap {
 
-    public static void main(String[] args) throws Exception {
-        final RheaKVTestCluster heartbeatTest = new RheaKVTestCluster();
-        heartbeatTest.start();
+    private final    NamedThreadFactory threadFactory = new NamedThreadFactory("heartbeat_test", true);
+    private          String[]           conf;
+    private volatile String             tempDbPath;
+    private volatile String                            tempRaftPath;
+    private          CopyOnWriteArrayList<RheaKVStore> stores        = new CopyOnWriteArrayList<>();
 
-        final Thread thread = threadFactory.newThread(() -> {
-            for (; ; ) {
-                heartbeatTest.putAndGetValue();
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    break;
-                }
-            }
-        });
-        thread.start();
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                heartbeatTest.shutdown();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
+    public static byte[] makeKey(String key) {
+        Requires.requireNonNull(key, "key");
+        return BytesUtil.writeUtf8(key);
     }
 
-    protected void start() throws IOException, InterruptedException {
+    public static byte[] makeValue(String value) {
+        Requires.requireNonNull(value, "value");
+        return BytesUtil.writeUtf8(value);
+    }
+
+    protected void start(String[] conf, boolean forceDelete) throws IOException, InterruptedException {
+        if (conf != null && conf.length > 0) {
+            this.conf = conf;
+        }
         System.out.println("RheaKVTestCluster init ...");
         File file = new File("rhea_pd_db");
-        if (file.exists()) {
+        if (file.exists() && forceDelete) {
             FileUtils.forceDelete(file);
         }
         file = new File("rhea_pd_db");
@@ -87,19 +73,19 @@ public class RheaKVTestCluster {
             System.out.println("make dir: " + this.tempDbPath);
         }
         file = new File("rhea_pd_raft");
-        if (file.exists()) {
+        if (file.exists() && forceDelete) {
             FileUtils.forceDelete(file);
         }
         file = new File("rhea_pd_raft");
-        if (file.mkdir()) {
+        if (file.mkdir() && forceDelete) {
             this.tempRaftPath = file.getAbsolutePath();
             System.out.println("make dir: " + this.tempRaftPath);
         }
 
         final Set<Long> regionIds = new HashSet<>();
-        for (final String c : CONF) {
+        for (final String c : this.conf) {
             final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-            final InputStream in = RheaKVTestCluster.class.getResourceAsStream(c);
+            final InputStream in = RheaKVTestBootstrap.class.getResourceAsStream(c);
             final RheaKVStoreOptions opts = mapper.readValue(in, RheaKVStoreOptions.class);
             for (final RegionEngineOptions rOpts : opts.getStoreEngineOptions().getRegionEngineOptionsList()) {
                 regionIds.add(rOpts.getRegionId());
@@ -123,15 +109,15 @@ public class RheaKVTestCluster {
         for (RheaKVStore store : stores) {
             store.shutdown();
         }
-        if (this.tempDbPath != null) {
-            System.out.println("removing dir: " + this.tempDbPath);
-            FileUtils.forceDelete(new File(this.tempDbPath));
-        }
-        if (this.tempRaftPath != null) {
-            System.out.println("removing dir: " + this.tempRaftPath);
-            FileUtils.forceDelete(new File(this.tempRaftPath));
-        }
-        System.out.println("RheaKVTestCluster shutdown complete");
+//        if (this.tempDbPath != null) {
+//            System.out.println("removing dir: " + this.tempDbPath);
+//            FileUtils.forceDelete(new File(this.tempDbPath));
+//        }
+//        if (this.tempRaftPath != null) {
+//            System.out.println("removing dir: " + this.tempRaftPath);
+//            FileUtils.forceDelete(new File(this.tempRaftPath));
+//        }
+//        System.out.println("RheaKVTestCluster shutdown complete");
     }
 
     protected RheaKVStore getLeaderStore(long regionId) {
@@ -175,15 +161,5 @@ public class RheaKVTestCluster {
         store.bPut(key, value);
         final byte[] newValue = store.bGet(key);
         Assert.assertArrayEquals(value, newValue);
-    }
-
-    public static byte[] makeKey(String key) {
-        Requires.requireNonNull(key, "key");
-        return BytesUtil.writeUtf8(key);
-    }
-
-    public static byte[] makeValue(String value) {
-        Requires.requireNonNull(value, "value");
-        return BytesUtil.writeUtf8(value);
     }
 }

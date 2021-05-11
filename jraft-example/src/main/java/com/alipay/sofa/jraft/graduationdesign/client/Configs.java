@@ -19,14 +19,14 @@ package com.alipay.sofa.jraft.graduationdesign.client;
 import java.io.File;
 
 public class Configs {
-    public static String DB_PATH            = "rhea_db" + File.separator;
+    public static String DB_PATH = "rhea_db" + File.separator;
 
-    public static String RAFT_DATA_PATH     = "raft_data" + File.separator;
+    public static String RAFT_DATA_PATH = "raft_data" + File.separator;
 
-    public static String ALL_NODE_ADDRESSES = "127.0.0.1:8181,127.0.0.1:8182,127.0.0.1:8183";
+    public static String ALL_NODE_ADDRESSES = "127.0.0.1:18181,127.0.0.1:18182,127.0.0.1:18183";
 
-    public static String ALL_PD_ADDRESSES   = "127.0.0.1:8180,127.0.0.1:8181,127.0.0.1:8182";
-    public static String PD_GROUP_ID        = "pd_test--1";
+    public static String ALL_PD_ADDRESSES = "127.0.0.1:8180,127.0.0.1:8181,127.0.0.1:8182";
+    public static String PD_GROUP_ID      = "pd_test--1";
 
-    public static String CLUSTER_NAME       = "rhea_pd_test";
+    public static String CLUSTER_NAME = "rhea_pd_test";
 }
