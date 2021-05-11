@@ -59,6 +59,10 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>jraft-rheakv-pd</artifactId>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
