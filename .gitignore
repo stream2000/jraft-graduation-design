@@ -13,3 +13,7 @@ target/
 *.log*
 data/
 jraft-core/src/test/resources/log4j2.xml
+/pd_raft/
+/pd_db/
+/rhea_pd_db/
+/rhea_pd_raft/
