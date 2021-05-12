@@ -32,18 +32,18 @@ public class Client {
 
     public void init() {
         final List<RegionRouteTableOptions> regionRouteTableOptionsList = MultiRegionRouteTableOptionsConfigured
-                .newConfigured() //
-                .withInitialServerList(1L /* default id */, Configs.ALL_NODE_ADDRESSES) //
-                .withInitialServerList(2L /* default id */, Configs.ALL_NODE_ADDRESSES) //
-                .config();
+            .newConfigured() //
+            .withInitialServerList(1L /* default id */, Configs.ALL_NODE_ADDRESSES) //
+            .withInitialServerList(2L /* default id */, Configs.ALL_NODE_ADDRESSES) //
+            .config();
         final PlacementDriverOptions pdOpts = PlacementDriverOptionsConfigured.newConfigured() //
-                .withFake(false) //
-                .withRegionRouteTableOptionsList(regionRouteTableOptionsList) //
-                .withInitialPdServerList(Configs.ALL_PD_ADDRESSES).withPdGroupId(Configs.PD_GROUP_ID).config();
+            .withFake(false) //
+            .withRegionRouteTableOptionsList(regionRouteTableOptionsList) //
+            .withInitialPdServerList(Configs.ALL_PD_ADDRESSES).withPdGroupId(Configs.PD_GROUP_ID).config();
         final RheaKVStoreOptions opts = RheaKVStoreOptionsConfigured.newConfigured() //
-                .withClusterName(Configs.CLUSTER_NAME) //
-                .withClusterId(111).withPlacementDriverOptions(pdOpts) //
-                .withFutureTimeoutMillis(100000).config();
+            .withClusterName(Configs.CLUSTER_NAME) //
+            .withClusterId(111).withPlacementDriverOptions(pdOpts) //
+            .withFutureTimeoutMillis(100000).config();
         System.out.println(opts);
         rheaKVStore.init(opts);
     }

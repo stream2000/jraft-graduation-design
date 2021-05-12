@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 
+import com.alipay.sofa.jraft.rhea.metadata.ScheduleTaskMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -263,6 +264,36 @@ public class DefaultMetadataStore implements MetadataStore {
             ids.put(storeId, endpoint);
         }
         return ids;
+    }
+
+    @Override
+    public Set<String> getUnfinishedScheduleTaskIds(final long clusterId) {
+        String unfinishedSchedulerTaskKey = MetadataKeyHelper.getSchedulerTaskPrefix(clusterId);
+        List<KVEntry> kvEntries = this.rheaKVStore.bScan(unfinishedSchedulerTaskKey, null);
+        final Set<String> taskIds = new HashSet<>(kvEntries.size());
+        for (KVEntry entry : kvEntries) {
+            ScheduleTaskMetadata metadata = this.serializer.readObject(entry.getValue(), ScheduleTaskMetadata.class);
+            taskIds.add(metadata.getTaskId());
+
+        }
+        return taskIds;
+    }
+
+    @Override
+    public ScheduleTaskMetadata getScheduleTaskMetadata(final long clusterId, final String taskId) {
+        final String key = MetadataKeyHelper.getSchedulerTaskKey(clusterId, taskId);
+        final byte[] bytes = this.rheaKVStore.bGet(key);
+        if (bytes == null) {
+            return null;
+        }
+        return this.serializer.readObject(bytes, ScheduleTaskMetadata.class);
+    }
+
+    @Override
+    public CompletableFuture<Boolean> saveScheduleTaskMetadata(final long clusterId, final ScheduleTaskMetadata metadata) {
+        final String key = MetadataKeyHelper.getSchedulerTaskKey(clusterId, metadata.getTaskId());
+        final byte[] bytes = this.serializer.writeObject(metadata);
+        return this.rheaKVStore.put(key, bytes);
     }
 
     @Override

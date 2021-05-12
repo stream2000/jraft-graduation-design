@@ -40,15 +40,20 @@ import com.alipay.sofa.jraft.util.Endpoint;
  */
 public class RemotePlacementDriverClient extends AbstractPlacementDriverClient {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RemotePlacementDriverClient.class);
+    private static final Logger        LOG = LoggerFactory.getLogger(RemotePlacementDriverClient.class);
 
-    private String              pdGroupId;
-    private MetadataRpcClient   metadataRpcClient;
+    private String                     pdGroupId;
+    private MetadataRpcClient          metadataRpcClient;
+    private ClusterManagementRpcClient clusterManagementRpcClient;
 
-    private boolean             started;
+    private boolean                    started;
 
     public RemotePlacementDriverClient(long clusterId, String clusterName) {
         super(clusterId, clusterName);
+    }
+
+    public ClusterManagementRpcClient getClusterManagementRpcClient() {
+        return clusterManagementRpcClient;
     }
 
     @Override
@@ -68,6 +73,7 @@ public class RemotePlacementDriverClient extends AbstractPlacementDriverClient {
         }
         RouteTable.getInstance().updateConfiguration(this.pdGroupId, initialPdServers);
         this.metadataRpcClient = new MetadataRpcClient(super.pdRpcService, 3);
+        this.clusterManagementRpcClient = new ClusterManagementRpcClient(super.pdRpcService, 3);
         refreshRouteTable();
         LOG.info("[RemotePlacementDriverClient] start successfully, options: {}.", opts);
         return this.started = true;

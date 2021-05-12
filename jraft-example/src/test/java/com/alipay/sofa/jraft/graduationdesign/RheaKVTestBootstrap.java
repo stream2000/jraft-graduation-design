@@ -42,11 +42,11 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class RheaKVTestBootstrap {
 
-    private final    NamedThreadFactory threadFactory = new NamedThreadFactory("heartbeat_test", true);
-    private          String[]           conf;
-    private volatile String             tempDbPath;
-    private volatile String                            tempRaftPath;
-    private          CopyOnWriteArrayList<RheaKVStore> stores        = new CopyOnWriteArrayList<>();
+    private final NamedThreadFactory          threadFactory = new NamedThreadFactory("heartbeat_test", true);
+    private String[]                          conf;
+    private volatile String                   tempDbPath;
+    private volatile String                   tempRaftPath;
+    private CopyOnWriteArrayList<RheaKVStore> stores        = new CopyOnWriteArrayList<>();
 
     public static byte[] makeKey(String key) {
         Requires.requireNonNull(key, "key");
@@ -109,15 +109,15 @@ public class RheaKVTestBootstrap {
         for (RheaKVStore store : stores) {
             store.shutdown();
         }
-//        if (this.tempDbPath != null) {
-//            System.out.println("removing dir: " + this.tempDbPath);
-//            FileUtils.forceDelete(new File(this.tempDbPath));
-//        }
-//        if (this.tempRaftPath != null) {
-//            System.out.println("removing dir: " + this.tempRaftPath);
-//            FileUtils.forceDelete(new File(this.tempRaftPath));
-//        }
-//        System.out.println("RheaKVTestCluster shutdown complete");
+        //        if (this.tempDbPath != null) {
+        //            System.out.println("removing dir: " + this.tempDbPath);
+        //            FileUtils.forceDelete(new File(this.tempDbPath));
+        //        }
+        //        if (this.tempRaftPath != null) {
+        //            System.out.println("removing dir: " + this.tempRaftPath);
+        //            FileUtils.forceDelete(new File(this.tempRaftPath));
+        //        }
+        //        System.out.println("RheaKVTestCluster shutdown complete");
     }
 
     protected RheaKVStore getLeaderStore(long regionId) {

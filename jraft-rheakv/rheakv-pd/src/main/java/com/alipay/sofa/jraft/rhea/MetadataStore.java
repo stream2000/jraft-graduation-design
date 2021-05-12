@@ -16,18 +16,19 @@
  */
 package com.alipay.sofa.jraft.rhea;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
 import com.alipay.sofa.jraft.rhea.metadata.Region;
 import com.alipay.sofa.jraft.rhea.metadata.RegionStats;
+import com.alipay.sofa.jraft.rhea.metadata.ScheduleTaskMetadata;
 import com.alipay.sofa.jraft.rhea.metadata.Store;
 import com.alipay.sofa.jraft.rhea.metadata.StoreStats;
 import com.alipay.sofa.jraft.rhea.util.Pair;
 import com.alipay.sofa.jraft.util.Endpoint;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 /**
  *
@@ -103,6 +104,12 @@ public interface MetadataStore {
     Set<Long /* storeId */> unsafeGetStoreIds(final long clusterId);
 
     Map<Long /* storeId */, Endpoint> unsafeGetStoreIdsByEndpoints(final long clusterId, final List<Endpoint> endpoints);
+
+    Set<String> getUnfinishedScheduleTaskIds(final long clusterId);
+
+    ScheduleTaskMetadata getScheduleTaskMetadata(final long clusterId, String taskId);
+
+    CompletableFuture<Boolean> saveScheduleTaskMetadata(final long clusterId, final ScheduleTaskMetadata metadata);
 
     /**
      * Clear the cache.

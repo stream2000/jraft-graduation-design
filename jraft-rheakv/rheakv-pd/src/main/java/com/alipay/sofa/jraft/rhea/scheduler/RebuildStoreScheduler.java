@@ -14,27 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alipay.sofa.jraft.graduationdesign;
+package com.alipay.sofa.jraft.rhea.scheduler;
 
-import java.io.IOException;
+import com.alipay.sofa.jraft.rhea.MetadataStore;
+import com.alipay.sofa.jraft.rhea.metadata.RebuildStoreTaskMetaData;
 
-public class MainRheaKVBootstrap extends RheaKVTestBootstrap {
+public class RebuildStoreScheduler extends Scheduler {
 
-    private static final String[] CONF = { "/kv/rhea_test_1.yaml", //
-            "/kv/rhea_test_2.yaml", //
-            "/kv/rhea_test_3.yaml" //
-                                       };
+    private final RebuildStoreTaskMetaData metaData;
 
-    public static void main(String[] args) throws Exception {
-        final MainRheaKVBootstrap server = new MainRheaKVBootstrap();
-        server.start(CONF, false);
+    public RebuildStoreScheduler(final MetadataStore metadataStore, RebuildStoreTaskMetaData metaData) {
+        super(metadataStore);
+        this.metaData = metaData;
+    }
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+    @Override
+    public void cancel() {
+        if (!isStopped) {
+            isStopped = true;
+            this.stopHook.run();
+        }
+    }
+
+    // polling
+    @Override
+    public void run() {
+        while (!isStopped) {
             try {
-                server.shutdown();
-            } catch (IOException e) {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }));
+        }
     }
+
+    private void nextStage() {
+
+    }
+
 }

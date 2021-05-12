@@ -24,7 +24,9 @@ import com.alipay.sofa.jraft.util.Endpoint;
  */
 public final class MetadataKeyHelper {
 
-    private static final char DELIMITER = '-';
+    private static final char DELIMITER       = '-';
+    private static final char UNFINISHED_FLAG = '0';
+    private static final char FINISHED_FLAG   = '1';
 
     public static String getClusterInfoKey(final long clusterId) {
         return StringBuilderHelper.get() //
@@ -86,6 +88,29 @@ public final class MetadataKeyHelper {
             .append(clusterId) //
             .append(DELIMITER) //
             .append(regionId) //
+            .toString();
+    }
+
+    public static String getSchedulerTaskPrefix(final long clusterId) {
+        return StringBuilderHelper.get() //
+            .append("pd_scheduler_task") //
+            .append(DELIMITER) //
+            .append(UNFINISHED_FLAG) //
+            .append(DELIMITER) //
+            .append(clusterId) //
+            .append(DELIMITER) //
+            .toString();
+    }
+
+    public static String getSchedulerTaskKey(final long clusterId, final String taskId) {
+        return StringBuilderHelper.get() //
+            .append("pd_scheduler_task") //
+            .append(DELIMITER) //
+            .append(UNFINISHED_FLAG) //
+            .append(DELIMITER) //
+            .append(clusterId) //
+            .append(DELIMITER) //
+            .append(taskId) //
             .toString();
     }
 

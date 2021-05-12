@@ -34,6 +34,7 @@ public abstract class BaseRequest implements Serializable {
     public static final byte  SET_STORE_INFO   = 0x05;
     public static final byte  GET_STORE_ID     = 0x06;
     public static final byte  CREATE_REGION_ID = 0x07;
+    public static final byte  REBUILD_STORE    = 0x08;
 
     private long              clusterId;
 

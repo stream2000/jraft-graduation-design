@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alipay.sofa.jraft.graduationdesign;
+package com.alipay.sofa.jraft.rhea.scheduler;
 
-import java.io.IOException;
+import com.alipay.sofa.jraft.rhea.MetadataStore;
 
-public class MainRheaKVBootstrap extends RheaKVTestBootstrap {
+public abstract class Scheduler implements Runnable {
 
-    private static final String[] CONF = { "/kv/rhea_test_1.yaml", //
-            "/kv/rhea_test_2.yaml", //
-            "/kv/rhea_test_3.yaml" //
-                                       };
+    MetadataStore    metadataStore;
+    StopHook         stopHook;
+    volatile boolean isStopped;
 
-    public static void main(String[] args) throws Exception {
-        final MainRheaKVBootstrap server = new MainRheaKVBootstrap();
-        server.start(CONF, false);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                server.shutdown();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
+    Scheduler(MetadataStore metadataStore) {
+        this.metadataStore = metadataStore;
     }
+
+    abstract void cancel();
+
+    void onStop(StopHook stopHook) {
+        this.stopHook = stopHook;
+    }
+
+    interface StopHook extends Runnable {
+    }
+
 }

@@ -23,6 +23,7 @@ import com.alipay.sofa.jraft.rhea.cmd.pd.CreateRegionIdRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.GetClusterInfoRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.GetStoreIdRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.GetStoreInfoRequest;
+import com.alipay.sofa.jraft.rhea.cmd.pd.RebuildStoreRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.RegionHeartbeatRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.SetStoreInfoRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.StoreHeartbeatRequest;
@@ -74,4 +75,11 @@ public interface PlacementDriverService extends Lifecycle<PlacementDriverServerO
      */
     void handleCreateRegionIdRequest(final CreateRegionIdRequest request,
                                      final RequestProcessClosure<BaseRequest, BaseResponse> closure);
+
+    /**
+     * {@link BaseRequest#REBUILD_STORE}
+     */
+    void handleRebuildStoreRequest(final RebuildStoreRequest request,
+                                   final RequestProcessClosure<BaseRequest, BaseResponse> closure);
+
 }

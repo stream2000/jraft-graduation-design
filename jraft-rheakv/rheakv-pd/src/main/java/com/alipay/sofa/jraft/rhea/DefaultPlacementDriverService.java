@@ -16,14 +16,7 @@
  */
 package com.alipay.sofa.jraft.rhea;
 
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadPoolExecutor;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.alipay.sofa.jraft.rhea.client.FutureHelper;
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
 import com.alipay.sofa.jraft.rhea.cmd.pd.BaseRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.BaseResponse;
@@ -35,6 +28,8 @@ import com.alipay.sofa.jraft.rhea.cmd.pd.GetStoreIdRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.GetStoreIdResponse;
 import com.alipay.sofa.jraft.rhea.cmd.pd.GetStoreInfoRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.GetStoreInfoResponse;
+import com.alipay.sofa.jraft.rhea.cmd.pd.RebuildStoreRequest;
+import com.alipay.sofa.jraft.rhea.cmd.pd.RebuildStoreResponse;
 import com.alipay.sofa.jraft.rhea.cmd.pd.RegionHeartbeatRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.RegionHeartbeatResponse;
 import com.alipay.sofa.jraft.rhea.cmd.pd.SetStoreInfoRequest;
@@ -44,12 +39,16 @@ import com.alipay.sofa.jraft.rhea.cmd.pd.StoreHeartbeatResponse;
 import com.alipay.sofa.jraft.rhea.errors.Errors;
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
 import com.alipay.sofa.jraft.rhea.metadata.Instruction;
+import com.alipay.sofa.jraft.rhea.metadata.RebuildStoreTaskMetaData;
+import com.alipay.sofa.jraft.rhea.metadata.ScheduleTaskMetadata;
 import com.alipay.sofa.jraft.rhea.metadata.Store;
 import com.alipay.sofa.jraft.rhea.options.PlacementDriverServerOptions;
 import com.alipay.sofa.jraft.rhea.pipeline.event.RegionPingEvent;
 import com.alipay.sofa.jraft.rhea.pipeline.event.StorePingEvent;
 import com.alipay.sofa.jraft.rhea.pipeline.handler.LogHandler;
 import com.alipay.sofa.jraft.rhea.pipeline.handler.PlacementDriverTailHandler;
+import com.alipay.sofa.jraft.rhea.scheduler.RebuildStoreScheduler;
+import com.alipay.sofa.jraft.rhea.scheduler.SchedulerManager;
 import com.alipay.sofa.jraft.rhea.util.StackTraceUtil;
 import com.alipay.sofa.jraft.rhea.util.concurrent.CallerRunsPolicyWithReport;
 import com.alipay.sofa.jraft.rhea.util.concurrent.NamedThreadFactory;
@@ -62,6 +61,15 @@ import com.alipay.sofa.jraft.rhea.util.pipeline.future.PipelineFuture;
 import com.alipay.sofa.jraft.util.JRaftServiceLoader;
 import com.alipay.sofa.jraft.util.Requires;
 import com.alipay.sofa.jraft.util.ThreadPoolUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  *
@@ -76,8 +84,8 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
     private MetadataStore       metadataStore;
     private HandlerInvoker      pipelineInvoker;
     private Pipeline            pipeline;
+    private SchedulerManager    schedulerManager;
     private volatile boolean    isLeader;
-
     private boolean             started;
 
     public DefaultPlacementDriverService(RheaKVStore rheaKVStore) {
@@ -98,6 +106,7 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
         }
         this.pipeline = new DefaultPipeline(); //
         initPipeline(this.pipeline);
+        this.schedulerManager = new SchedulerManager(this.metadataStore);
         LOG.info("[DefaultPlacementDriverService] start successfully, options: {}.", opts);
         return this.started = true;
     }
@@ -110,6 +119,9 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
         try {
             if (this.pipelineInvoker != null) {
                 this.pipelineInvoker.shutdown();
+            }
+            if (this.schedulerManager != null) {
+                this.schedulerManager.shutdown();
             }
             invalidLocalCache();
         } finally {
@@ -295,6 +307,44 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
     }
 
     @Override
+    public void handleRebuildStoreRequest(final RebuildStoreRequest request,
+                                          final RequestProcessClosure<BaseRequest, BaseResponse> closure) {
+        final long clusterId = request.getClusterId();
+        final RebuildStoreResponse response = new RebuildStoreResponse();
+        response.setClusterId(clusterId);
+        LOG.info("Handling {}.", request);
+        if (!this.isLeader) {
+            response.setError(Errors.NOT_LEADER);
+            closure.sendResponse(response);
+            return;
+        }
+
+        RebuildStoreTaskMetaData metaData = new RebuildStoreTaskMetaData();
+        metaData.setTaskId(UUID.randomUUID().toString());
+        metaData.setFromStoreId(request.getFromStoreId());
+        metaData.setToStoreId(request.getToStoreId());
+
+        // TODO: persistent the task meta data and start the scheduler
+        // once we have persisted the meta, return the task id to user
+        // user can query the task status by task id
+
+        try {
+            boolean result = this.metadataStore.saveScheduleTaskMetadata(clusterId, metaData).get();
+            if (!result) {
+                response.setError(Errors.UNKNOWN_SERVER_ERROR);
+            } else {
+                response.setValue(metaData.getTaskId());
+                RebuildStoreScheduler rebuildStoreScheduler = new RebuildStoreScheduler(metadataStore, metaData);
+                this.schedulerManager.registerScheduler(rebuildStoreScheduler);
+            }
+        } catch (final Throwable t) {
+            LOG.error("Failed to handle: {}, {}.", request, StackTraceUtil.stackTrace(t));
+            response.setError(Errors.forException(t));
+        }
+        closure.sendResponse(response);
+    }
+
+    @Override
     public void onLeaderStart(final long leaderTerm) {
         this.isLeader = true;
         invalidLocalCache();
@@ -335,6 +385,10 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
             this.metadataStore.invalidCache();
         }
         ClusterStatsManager.invalidCache();
+    }
+
+    public SchedulerManager getSchedulerManager() {
+        return schedulerManager;
     }
 
     private ThreadPoolExecutor createPipelineExecutor(final PlacementDriverServerOptions opts) {

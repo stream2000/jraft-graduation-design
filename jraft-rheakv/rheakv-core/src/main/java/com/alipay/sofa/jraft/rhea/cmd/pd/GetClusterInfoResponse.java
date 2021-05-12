@@ -25,7 +25,8 @@ public class GetClusterInfoResponse extends BaseResponse<Cluster> {
 
     private static final long serialVersionUID = 8811355826978037463L;
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         if (getValue() == null) {
             return "null";
         }

@@ -29,7 +29,8 @@ public class PdClient {
     public static void main(String[] args) {
         final Client client = new Client();
         client.init();
-        addPeer(client.getRheaKVStore());
+        submitRebuildRequest(client.getRheaKVStore());
+        listClusterInfo(client.getRheaKVStore());
         client.shutdown();
     }
 
@@ -40,6 +41,13 @@ public class PdClient {
         System.out.println(leaderEndpoint);
         Cluster cluster = remotePdClient.getMetadataRpcClient().getClusterInfo(111);
         printCluster(cluster);
+    }
+
+    public static void submitRebuildRequest(final RheaKVStore rheaKVStore) {
+        PlacementDriverClient pdClient = rheaKVStore.getPlacementDriverClient();
+        RemotePlacementDriverClient remotePdClient = (RemotePlacementDriverClient) pdClient;
+        String taskId = remotePdClient.getClusterManagementRpcClient().submitRebuildStoreRequest(111, 0, 1);
+        System.out.println(taskId);
     }
 
     public static void addPeer(final RheaKVStore rheaKVStore) {
@@ -63,5 +71,4 @@ public class PdClient {
             System.out.println(store);
         }
     }
-
 }

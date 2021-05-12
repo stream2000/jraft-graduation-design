@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import com.alipay.sofa.jraft.rhea.cmd.pd.RebuildStoreRequest;
+import com.alipay.sofa.jraft.rhea.scheduler.SchedulerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,6 +109,7 @@ public class PlacementDriverServer implements Lifecycle<PlacementDriverServerOpt
     private PlacementDriverService   placementDriverService;
     private RheaKVStore              rheaKVStore;
     private RegionEngine             regionEngine;
+    private SchedulerManager         schedulerManager;
 
     private boolean                  started;
 
@@ -149,6 +152,9 @@ public class PlacementDriverServer implements Lifecycle<PlacementDriverServerOpt
         this.regionEngine = regionEngines.get(0);
         this.rheaKVStore.addLeaderStateListener(this.regionEngine.getRegion().getId(),
             ((DefaultPlacementDriverService) this.placementDriverService));
+        this.rheaKVStore.addLeaderStateListener(this.regionEngine.getRegion().getId(),
+            ((DefaultPlacementDriverService) this.placementDriverService).getSchedulerManager());
+
         addPlacementDriverProcessor(storeEngine.getRpcServer());
         LOG.info("[PlacementDriverServer] start successfully, options: {}.", opts);
         return this.started = true;
@@ -214,6 +220,8 @@ public class PlacementDriverServer implements Lifecycle<PlacementDriverServerOpt
         rpcServer.registerProcessor(new PlacementDriverProcessor<>(SetStoreInfoRequest.class,
             this.placementDriverService, this.pdExecutor));
         rpcServer.registerProcessor(new PlacementDriverProcessor<>(CreateRegionIdRequest.class,
+            this.placementDriverService, this.pdExecutor));
+        rpcServer.registerProcessor(new PlacementDriverProcessor<>(RebuildStoreRequest.class,
             this.placementDriverService, this.pdExecutor));
     }
 

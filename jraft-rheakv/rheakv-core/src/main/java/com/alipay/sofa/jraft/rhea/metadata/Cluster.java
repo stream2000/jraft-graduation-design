@@ -16,12 +16,12 @@
  */
 package com.alipay.sofa.jraft.rhea.metadata;
 
+import com.alipay.sofa.jraft.rhea.util.Lists;
+import com.alipay.sofa.jraft.util.Copiable;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
-
-import com.alipay.sofa.jraft.rhea.util.Lists;
-import com.alipay.sofa.jraft.util.Copiable;
 
 /**
  *
@@ -33,10 +33,19 @@ public class Cluster implements Copiable<Cluster>, Serializable {
 
     private long              clusterId;
     private List<Store>       stores;
+    private boolean           needOverwrite;                          // added by stream2000 for reset store
 
     public Cluster(long clusterId, List<Store> stores) {
         this.clusterId = clusterId;
         this.stores = stores;
+    }
+
+    public boolean isNeedOverwrite() {
+        return needOverwrite;
+    }
+
+    public void setNeedOverwrite(final boolean needOverwrite) {
+        this.needOverwrite = needOverwrite;
     }
 
     public long getClusterId() {
