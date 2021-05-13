@@ -19,10 +19,10 @@ package com.alipay.sofa.jraft.rhea.metadata;
 public class RebuildStoreTaskMetaData extends ScheduleTaskMetadata {
 
     private static final long serialVersionUID = -6822059115806648547L;
-    private Long fromStoreId;
-    private Long toStoreId;
-    private Store fromStoreMeta;
-    private int taskStatusCode;
+    private Long              fromStoreId;
+    private Long              toStoreId;
+    private Store             fromStoreMeta;
+    private int               taskStatusCode;
     private ResetStoreSubTask resetStoreSubTask;
 
     public ResetStoreSubTask getResetStoreSubTask() {
@@ -72,11 +72,7 @@ public class RebuildStoreTaskMetaData extends ScheduleTaskMetadata {
     }
 
     public enum TaskStatus {
-        INIT(0),
-        RESET_STORE(1),
-        CHANGE_PEER(2),
-        FINISHED(3),
-        ABORT(4);
+        INIT(0), RESET_STORE(1), CHANGE_PEER(2), FINISHED(3), ABORT(4);
 
         private final int code;
 
@@ -100,11 +96,11 @@ public class RebuildStoreTaskMetaData extends ScheduleTaskMetadata {
 
     public static class ResetStoreSubTask {
 
-        public static final String INIT_STATE = "INIT";
-        public static final String RESET_STATE = "INIT";
+        public static final String INIT_STATE        = "INIT";
+        public static final String RESET_STATE       = "INIT";
         public static final String WAIT_UPDATE_STATE = "WAIT_UPDATE";
-        public static final String FINISH_STATE = "FINISH";
-        private String taskState; // INIT -> RESET -> WAIT_UPDATE -> FINISH
+        public static final String FINISH_STATE      = "FINISH";
+        private String             taskState;                        // INIT -> RESET -> WAIT_UPDATE -> FINISH
 
         public ResetStoreSubTask(String taskState) {
             this.taskState = taskState;

@@ -107,7 +107,7 @@ public interface MetadataStore {
 
     Set<String> getUnfinishedScheduleTaskIds();
 
-    ScheduleTaskMetadata getScheduleTaskMetadata(String taskId);
+    Pair<ScheduleTaskMetadata, byte[]> getScheduleTaskMetadata(String taskId);
 
     CompletableFuture<Boolean> setScheduleTaskMetadata(final long clusterId, final ScheduleTaskMetadata metadata);
 

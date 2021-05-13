@@ -142,8 +142,10 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
             // Only save the data
             final StorePingEvent storePingEvent = new StorePingEvent(request, this.metadataStore);
             final PipelineFuture<List<Instruction>> future = this.pipeline.invoke(storePingEvent);
-            future.whenComplete((ignored, throwable) -> {
-                if (throwable != null) {
+            future.whenComplete((instructions, throwable) -> {
+                if (throwable == null) {
+                    response.setValue(instructions);
+                } else  {
                     LOG.error("Failed to handle: {}, {}.", request, StackTraceUtil.stackTrace(throwable));
                     response.setError(Errors.forException(throwable));
                 }
@@ -323,6 +325,8 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
         metaData.setToStoreId(request.getToStoreId());
         metaData.setClusterId((int) request.getClusterId());
         metaData.setTaskType(ScheduleTaskMetadata.ScheduleTaskType.REBUILD_STORE.getCode());
+        metaData.setResetStoreSubTask(new RebuildStoreTaskMetaData.ResetStoreSubTask(
+            RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE));
 
         // TODO: persistent the task meta data and start the scheduler
         // once we have persisted the meta, return the task id to user

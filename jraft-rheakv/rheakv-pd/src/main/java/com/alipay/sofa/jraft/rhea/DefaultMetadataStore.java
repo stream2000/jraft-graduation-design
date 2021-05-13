@@ -16,22 +16,11 @@
  */
 package com.alipay.sofa.jraft.rhea;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentMap;
-
-import com.alipay.sofa.jraft.rhea.metadata.ScheduleTaskMetadata;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
 import com.alipay.sofa.jraft.rhea.metadata.Region;
 import com.alipay.sofa.jraft.rhea.metadata.RegionStats;
+import com.alipay.sofa.jraft.rhea.metadata.ScheduleTaskMetadata;
 import com.alipay.sofa.jraft.rhea.metadata.Store;
 import com.alipay.sofa.jraft.rhea.metadata.StoreStats;
 import com.alipay.sofa.jraft.rhea.serialization.Serializer;
@@ -48,6 +37,16 @@ import com.alipay.sofa.jraft.rhea.util.Strings;
 import com.alipay.sofa.jraft.util.Bits;
 import com.alipay.sofa.jraft.util.BytesUtil;
 import com.alipay.sofa.jraft.util.Endpoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  *
@@ -274,24 +273,24 @@ public class DefaultMetadataStore implements MetadataStore {
     @Override
     public Set<String> getUnfinishedScheduleTaskIds() {
         String unfinishedSchedulerTaskKey = MetadataKeyHelper.getSchedulerTaskPrefix();
-        List<KVEntry> kvEntries = this.rheaKVStore.bScan(unfinishedSchedulerTaskKey, null);
+        List<KVEntry> kvEntries = this.rheaKVStore.bScan(unfinishedSchedulerTaskKey,
+            MetadataKeyHelper.getSchedulerTaskEndKey());
         final Set<String> taskIds = new HashSet<>(kvEntries.size());
         for (KVEntry entry : kvEntries) {
             ScheduleTaskMetadata metadata = this.serializer.readObject(entry.getValue(), ScheduleTaskMetadata.class);
             taskIds.add(metadata.getTaskId());
-
         }
         return taskIds;
     }
 
     @Override
-    public ScheduleTaskMetadata getScheduleTaskMetadata(final String taskId) {
+    public Pair<ScheduleTaskMetadata, byte[]> getScheduleTaskMetadata(final String taskId) {
         final String key = MetadataKeyHelper.getSchedulerTaskKey(taskId);
         final byte[] bytes = this.rheaKVStore.bGet(key);
         if (bytes == null) {
             return null;
         }
-        return this.serializer.readObject(bytes, ScheduleTaskMetadata.class);
+        return Pair.of(this.serializer.readObject(bytes, ScheduleTaskMetadata.class), bytes);
     }
 
     @Override

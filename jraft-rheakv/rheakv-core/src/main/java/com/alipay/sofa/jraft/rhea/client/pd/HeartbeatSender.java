@@ -146,7 +146,7 @@ public class HeartbeatSender implements Lifecycle<HeartbeatOptions> {
         final HeartbeatClosure<List<Instruction>> closure = new HeartbeatClosure<List<Instruction>>() {
             @Override
             public void run(final Status status) {
-                if (!status.isOk()) {
+                if (status.isOk()) {
                     final List<Instruction> instructions = getResult();
                     if (instructions != null && !instructions.isEmpty()) {
                         instructionProcessor.process(instructions);

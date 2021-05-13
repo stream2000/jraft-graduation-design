@@ -98,9 +98,14 @@ public final class MetadataKeyHelper {
         return StringBuilderHelper.get() //
             .append("pd_scheduler_task") //
             .append(DELIMITER) //
-            .append(UNFINISHED_FLAG) //
+            .append(UNFINISHED_FLAG).toString();
+    }
+
+    public static String getSchedulerTaskEndKey() {
+        return StringBuilderHelper.get() //
+            .append("pd_scheduler_task") //
             .append(DELIMITER) //
-            .toString();
+            .append(FINISHED_FLAG).toString();
     }
 
     public static String getSchedulerTaskKey(final String taskId) {

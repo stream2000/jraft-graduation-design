@@ -20,6 +20,8 @@ import com.alipay.sofa.jraft.rhea.LeaderStateListener;
 import com.alipay.sofa.jraft.rhea.MetadataStore;
 import com.alipay.sofa.jraft.rhea.metadata.RebuildStoreTaskMetaData;
 import com.alipay.sofa.jraft.rhea.metadata.ScheduleTaskMetadata;
+import com.alipay.sofa.jraft.rhea.serialization.Serializers;
+import com.alipay.sofa.jraft.rhea.util.Pair;
 import com.alipay.sofa.jraft.rhea.util.concurrent.CallerRunsPolicyWithReport;
 import com.alipay.sofa.jraft.rhea.util.concurrent.NamedThreadFactory;
 import com.alipay.sofa.jraft.util.ExecutorServiceHelper;
@@ -47,12 +49,14 @@ public class SchedulerManager implements LeaderStateListener {
     public void loadSchedulersFromMetadata() {
         Set<String> taskIds = this.metadataStore.getUnfinishedScheduleTaskIds();
         for (String taskId : taskIds) {
-            ScheduleTaskMetadata taskMetadata = metadataStore.getScheduleTaskMetadata(taskId);
+            Pair<ScheduleTaskMetadata, byte[]> pair = metadataStore.getScheduleTaskMetadata(taskId);
+            ScheduleTaskMetadata taskMetadata = pair.getKey();
             ScheduleTaskMetadata.ScheduleTaskType taskType = ScheduleTaskMetadata.ScheduleTaskType.codeOf(taskMetadata
                 .getTaskType());
             switch (taskType) {
                 case REBUILD_STORE:
-                    RebuildStoreTaskMetaData rebuildStoreTaskMetaData = (RebuildStoreTaskMetaData) taskMetadata;
+                    RebuildStoreTaskMetaData rebuildStoreTaskMetaData = Serializers.getDefault().readObject(
+                        pair.getValue(), RebuildStoreTaskMetaData.class);
                     RebuildStoreScheduler rebuildStoreScheduler = new RebuildStoreScheduler(metadataStore,
                         rebuildStoreTaskMetaData);
                     registerScheduler(rebuildStoreScheduler);

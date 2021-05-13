@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alipay.sofa.jraft.graduationdesign.client;
+package com.alipay.sofa.jraft.graduationdesign;
 
 import com.alipay.sofa.jraft.entity.PeerId;
+import com.alipay.sofa.jraft.graduationdesign.client.Client;
 import com.alipay.sofa.jraft.rhea.JRaftHelper;
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
 import com.alipay.sofa.jraft.rhea.client.pd.PlacementDriverClient;
@@ -29,7 +30,7 @@ public class PdClient {
     public static void main(String[] args) {
         final Client client = new Client();
         client.init();
-        //        submitRebuildRequest(client.getRheaKVStore());
+        submitRebuildRequest(client.getRheaKVStore());
         listClusterInfo(client.getRheaKVStore());
         client.shutdown();
     }

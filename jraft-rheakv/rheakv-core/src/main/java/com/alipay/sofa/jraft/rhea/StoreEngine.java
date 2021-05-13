@@ -634,7 +634,7 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         final long metricsReportPeriod = opts.getMetricsReportPeriod();
 
         // init region engine opts
-        rOpts.setRaftGroupId(JRaftHelper.getJRaftGroupId(clusterName, rOpts.getRegionId()));
+        rOpts.setRaftGroupId(JRaftHelper.getJRaftGroupId(clusterName,region.getId()));
         rOpts.setServerAddress(serverAddress);
         if (Strings.isBlank(rOpts.getInitialServerList())) {
             if (region.getPeers() == null || region.getPeers().isEmpty()) {

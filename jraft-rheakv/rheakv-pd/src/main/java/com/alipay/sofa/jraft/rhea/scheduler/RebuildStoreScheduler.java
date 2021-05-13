@@ -38,11 +38,11 @@ import org.slf4j.LoggerFactory;
 
 public class RebuildStoreScheduler extends Scheduler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RebuildStoreScheduler.class);
+    private static final Logger            LOG        = LoggerFactory.getLogger(RebuildStoreScheduler.class);
     private final RebuildStoreTaskMetaData taskMeta;
-    private final RheaKVStore rheaKVStore;
-    private final String taskKey;
-    private final Serializer serializer = Serializers.getDefault();
+    private final RheaKVStore              rheaKVStore;
+    private final String                   taskKey;
+    private final Serializer               serializer = Serializers.getDefault();
 
     public RebuildStoreScheduler(final MetadataStore metadataStore, RebuildStoreTaskMetaData taskMeta) {
         super(metadataStore);
@@ -81,6 +81,8 @@ public class RebuildStoreScheduler extends Scheduler {
                 processChangePeer();
                 break;
             case FINISHED:
+                this.isStopped = true;
+                this.stopHook.run();
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + taskMeta.getTaskStatusCode());
@@ -93,8 +95,8 @@ public class RebuildStoreScheduler extends Scheduler {
         Store fromStoreMeta = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getFromStoreId());
         taskMeta.setTaskStatusCode(TaskStatus.RESET_STORE.getCode());
         taskMeta.setFromStoreMeta(fromStoreMeta);
-        taskMeta.setResetStoreSubTask(
-                new RebuildStoreTaskMetaData.ResetStoreSubTask(RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE));
+        taskMeta.setResetStoreSubTask(new RebuildStoreTaskMetaData.ResetStoreSubTask(
+            RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE));
         boolean result = this.rheaKVStore.bCompareAndPut(taskKey, prevData, this.serializer.writeObject(taskMeta));
         if (!result) {
             // someone modified it, return directly
@@ -113,12 +115,11 @@ public class RebuildStoreScheduler extends Scheduler {
     private void processResetStore() {
         LOG.info("RebuildStoreSchedule task {} entered reset store state", taskMeta);
         String storeMetaKey = MetadataKeyHelper.getStoreInfoKey(taskMeta.getClusterId(), taskMeta.getToStoreId());
-        String taskKey = MetadataKeyHelper.getSchedulerTaskKey(taskMeta.getTaskId());
 
         // step 1, overwrite the store
         if (taskMeta.getResetStoreSubTask().getTaskState()
                 .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE)) {
-            Store toStoreMeta = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getFromStoreId());
+            Store toStoreMeta = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getToStoreId());
             Store fromStoreMeta = taskMeta.getFromStoreMeta();
             // record prevData
             byte[] taskMetaExpect = this.serializer.writeObject(taskMeta);
@@ -155,19 +156,15 @@ public class RebuildStoreScheduler extends Scheduler {
         if (taskMeta.getResetStoreSubTask().getTaskState()
                 .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.RESET_STATE)) {
             byte[] taskMetaExpect = this.serializer.writeObject(taskMeta);
-            int retryNum = 0;
             int sleepDuration = 1000;
             while (!isStopped) {
-                if (retryNum >= 20) {
-                    abortTask();
-                    return;
-                }
                 try {
-                    Store currentStore = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getFromStoreId());
+                    Store currentStore = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getToStoreId());
                     if (!currentStore.isNeedOverwrite()) {
                         taskMeta.getResetStoreSubTask()
                                 .setTaskState(RebuildStoreTaskMetaData.ResetStoreSubTask.WAIT_UPDATE_STATE);
-                        boolean ok = rheaKVStore.bCompareAndPut(taskKey, taskMetaExpect, this.serializer.writeObject(taskMeta));
+                        boolean ok = rheaKVStore
+                                .bCompareAndPut(taskKey, taskMetaExpect, this.serializer.writeObject(taskMeta));
                         if (!ok) {
                             LOG.warn("Task {} was modified by another process", taskMeta.getTaskId());
                             cancel();
@@ -175,7 +172,6 @@ public class RebuildStoreScheduler extends Scheduler {
                         }
                         break;
                     }
-                    retryNum++;
                     if (sleepDuration < 5000) {
                         sleepDuration += 1000;
                     }
@@ -191,8 +187,8 @@ public class RebuildStoreScheduler extends Scheduler {
         if (taskMeta.getResetStoreSubTask().getTaskState()
                 .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.WAIT_UPDATE_STATE)) {
             byte[] taskMetaExpect = this.serializer.writeObject(taskMeta);
-            taskMeta.getResetStoreSubTask()
-                    .setTaskState(RebuildStoreTaskMetaData.ResetStoreSubTask.FINISH_STATE);
+            taskMeta.getResetStoreSubTask().setTaskState(RebuildStoreTaskMetaData.ResetStoreSubTask.FINISH_STATE);
+            taskMeta.setTaskStatusCode(TaskStatus.CHANGE_PEER.getCode());
             boolean ok = rheaKVStore.bCompareAndPut(taskKey, taskMetaExpect, this.serializer.writeObject(taskMeta));
             if (!ok) {
                 LOG.warn("Task {} was modified by another process", taskMeta.getTaskId());
@@ -201,10 +197,6 @@ public class RebuildStoreScheduler extends Scheduler {
             }
         }
 
-        if (taskMeta.getResetStoreSubTask().getTaskState()
-                .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.FINISH_STATE)) {
-
-        }
         nextStage();
     }
 
