@@ -16,21 +16,21 @@
  */
 package com.alipay.sofa.jraft.rhea.client.pd;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.alipay.sofa.jraft.Status;
 import com.alipay.sofa.jraft.rhea.RegionEngine;
 import com.alipay.sofa.jraft.rhea.StoreEngine;
 import com.alipay.sofa.jraft.rhea.metadata.Instruction;
 import com.alipay.sofa.jraft.rhea.metadata.Region;
+import com.alipay.sofa.jraft.rhea.metadata.Store;
 import com.alipay.sofa.jraft.rhea.storage.BaseKVStoreClosure;
 import com.alipay.sofa.jraft.rhea.util.StackTraceUtil;
 import com.alipay.sofa.jraft.util.Endpoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Processing the instructions from the placement driver server.
@@ -55,6 +55,7 @@ public class InstructionProcessor {
             }
             processSplit(instruction);
             processTransferLeader(instruction);
+            processFetchStoreMeta(instruction);
         }
     }
 
@@ -131,12 +132,33 @@ public class InstructionProcessor {
         }
     }
 
+    private boolean processFetchStoreMeta(final Instruction instruction) {
+        try {
+            final Instruction.FetchStoreMeta fetchStoreMeta = instruction.getFetchStoreMeta();
+            if (fetchStoreMeta == null) {
+                return false;
+            }
+            Store newStore = this.storeEngine.getPlacementDriverClient().getStoreMetadata(storeEngine.getStoreOpts());
+            if (newStore.isNeedOverwrite()) {
+                storeEngine.resetAllRegionEngine(newStore);
+            }
+            MetadataRpcClient metadataRpcClient = ((RemotePlacementDriverClient) this.storeEngine
+                .getPlacementDriverClient()).getMetadataRpcClient();
+            newStore.setNeedOverwrite(false);
+            metadataRpcClient.updateStoreInfo(storeEngine.getClusterId(), newStore);
+            return true;
+        } catch (final Throwable t) {
+            LOG.error("Caught an exception on #processFetchStoreMeta: {}.", StackTraceUtil.stackTrace(t));
+            return false;
+        }
+    }
+
     private boolean checkInstruction(final Instruction instruction) {
         if (instruction == null) {
             LOG.warn("Null instructions element.");
             return false;
         }
-        if (instruction.getRegion() == null) {
+        if (instruction.getRegion() == null && instruction.getFetchStoreMeta() == null) {
             LOG.warn("Null region with instruction: {}.", instruction);
             return false;
         }

@@ -34,6 +34,7 @@ import org.junit.Assert;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -87,6 +88,9 @@ public class RheaKVTestBootstrap {
             final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
             final InputStream in = RheaKVTestBootstrap.class.getResourceAsStream(c);
             final RheaKVStoreOptions opts = mapper.readValue(in, RheaKVStoreOptions.class);
+            if (opts.getStoreEngineOptions().getRegionEngineOptionsList() == null) {
+                opts.getStoreEngineOptions().setRegionEngineOptionsList(new ArrayList<>());
+            }
             for (final RegionEngineOptions rOpts : opts.getStoreEngineOptions().getRegionEngineOptionsList()) {
                 regionIds.add(rOpts.getRegionId());
             }

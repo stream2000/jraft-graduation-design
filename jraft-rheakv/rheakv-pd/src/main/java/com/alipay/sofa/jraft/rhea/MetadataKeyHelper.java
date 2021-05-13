@@ -28,6 +28,9 @@ public final class MetadataKeyHelper {
     private static final char UNFINISHED_FLAG = '0';
     private static final char FINISHED_FLAG   = '1';
 
+    private MetadataKeyHelper() {
+    }
+
     public static String getClusterInfoKey(final long clusterId) {
         return StringBuilderHelper.get() //
             .append("pd_cluster") //
@@ -91,29 +94,22 @@ public final class MetadataKeyHelper {
             .toString();
     }
 
-    public static String getSchedulerTaskPrefix(final long clusterId) {
+    public static String getSchedulerTaskPrefix() {
         return StringBuilderHelper.get() //
             .append("pd_scheduler_task") //
             .append(DELIMITER) //
             .append(UNFINISHED_FLAG) //
-            .append(DELIMITER) //
-            .append(clusterId) //
             .append(DELIMITER) //
             .toString();
     }
 
-    public static String getSchedulerTaskKey(final long clusterId, final String taskId) {
+    public static String getSchedulerTaskKey(final String taskId) {
         return StringBuilderHelper.get() //
             .append("pd_scheduler_task") //
             .append(DELIMITER) //
             .append(UNFINISHED_FLAG) //
-            .append(DELIMITER) //
-            .append(clusterId) //
             .append(DELIMITER) //
             .append(taskId) //
             .toString();
-    }
-
-    private MetadataKeyHelper() {
     }
 }

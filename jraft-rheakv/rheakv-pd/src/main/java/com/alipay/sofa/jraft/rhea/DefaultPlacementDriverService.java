@@ -16,7 +16,6 @@
  */
 package com.alipay.sofa.jraft.rhea;
 
-import com.alipay.sofa.jraft.rhea.client.FutureHelper;
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
 import com.alipay.sofa.jraft.rhea.cmd.pd.BaseRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.BaseResponse;
@@ -65,7 +64,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -143,7 +141,7 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
         try {
             // Only save the data
             final StorePingEvent storePingEvent = new StorePingEvent(request, this.metadataStore);
-            final PipelineFuture<Object> future = this.pipeline.invoke(storePingEvent);
+            final PipelineFuture<List<Instruction>> future = this.pipeline.invoke(storePingEvent);
             future.whenComplete((ignored, throwable) -> {
                 if (throwable != null) {
                     LOG.error("Failed to handle: {}, {}.", request, StackTraceUtil.stackTrace(throwable));
@@ -323,13 +321,15 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
         metaData.setTaskId(UUID.randomUUID().toString());
         metaData.setFromStoreId(request.getFromStoreId());
         metaData.setToStoreId(request.getToStoreId());
+        metaData.setClusterId((int) request.getClusterId());
+        metaData.setTaskType(ScheduleTaskMetadata.ScheduleTaskType.REBUILD_STORE.getCode());
 
         // TODO: persistent the task meta data and start the scheduler
         // once we have persisted the meta, return the task id to user
         // user can query the task status by task id
 
         try {
-            boolean result = this.metadataStore.saveScheduleTaskMetadata(clusterId, metaData).get();
+            boolean result = this.metadataStore.setScheduleTaskMetadata(clusterId, metaData).get();
             if (!result) {
                 response.setError(Errors.UNKNOWN_SERVER_ERROR);
             } else {

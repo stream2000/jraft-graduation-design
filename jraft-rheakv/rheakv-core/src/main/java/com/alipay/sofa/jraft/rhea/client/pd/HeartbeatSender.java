@@ -143,10 +143,15 @@ public class HeartbeatSender implements Lifecycle<HeartbeatOptions> {
         final TimeInterval timeInterval = new TimeInterval(lastTime, now);
         final StoreStats stats = this.statsCollector.collectStoreStats(timeInterval);
         request.setStats(stats);
-        final HeartbeatClosure<Object> closure = new HeartbeatClosure<Object>() {
-
+        final HeartbeatClosure<List<Instruction>> closure = new HeartbeatClosure<List<Instruction>>() {
             @Override
             public void run(final Status status) {
+                if (!status.isOk()) {
+                    final List<Instruction> instructions = getResult();
+                    if (instructions != null && !instructions.isEmpty()) {
+                        instructionProcessor.process(instructions);
+                    }
+                }
                 final boolean forceRefresh = !status.isOk() && ErrorsHelper.isInvalidPeer(getError());
                 final StoreHeartbeatTask nexTask = new StoreHeartbeatTask(nextDelay, now, forceRefresh);
                 heartbeatTimer.newTimeout(nexTask, nexTask.getNextDelay(), TimeUnit.SECONDS);

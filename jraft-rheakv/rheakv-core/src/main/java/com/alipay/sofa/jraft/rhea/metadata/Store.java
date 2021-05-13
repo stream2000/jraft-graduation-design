@@ -16,13 +16,13 @@
  */
 package com.alipay.sofa.jraft.rhea.metadata;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Objects;
-
 import com.alipay.sofa.jraft.rhea.util.Lists;
 import com.alipay.sofa.jraft.util.Copiable;
 import com.alipay.sofa.jraft.util.Endpoint;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * A physical node in the cluster, embedded in an app java process,
@@ -41,6 +41,8 @@ public class Store implements Copiable<Store>, Serializable {
     private List<Region>      regions;                                // list of included regions
     private List<StoreLabel>  labels;                                 // key/value label
 
+    private boolean           needOverwrite;                          // added by stream2000 for reset store
+
     public Store() {
     }
 
@@ -50,6 +52,14 @@ public class Store implements Copiable<Store>, Serializable {
         this.state = state;
         this.regions = regions;
         this.labels = labels;
+    }
+
+    public boolean isNeedOverwrite() {
+        return needOverwrite;
+    }
+
+    public void setNeedOverwrite(final boolean needOverwrite) {
+        this.needOverwrite = needOverwrite;
     }
 
     public boolean isEmpty() {
@@ -104,18 +114,20 @@ public class Store implements Copiable<Store>, Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        Store store = (Store) o;
-        return id == store.id && Objects.equals(endpoint, store.endpoint);
+    public int hashCode() {
+        return Objects.hash(id, endpoint);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(id, endpoint);
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Store store = (Store) o;
+        return id == store.id && Objects.equals(endpoint, store.endpoint);
     }
 
     @Override

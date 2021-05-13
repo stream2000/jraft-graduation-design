@@ -13,5 +13,7 @@ rheaKVStoreOptions:
     serverAddress:
       ip: 127.0.0.1
       port: 8180
+    regionEngineOptionsList:
+      - { regionId: -1, initialServerList: "127.0.0.1:8180,127.0.0.1:8181,127.0.0.1:8182" }
 
   initialServerList: 127.0.0.1:8180,127.0.0.1:8181,127.0.0.1:8182

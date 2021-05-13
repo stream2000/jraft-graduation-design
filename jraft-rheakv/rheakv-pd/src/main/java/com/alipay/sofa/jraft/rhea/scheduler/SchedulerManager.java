@@ -18,12 +18,15 @@ package com.alipay.sofa.jraft.rhea.scheduler;
 
 import com.alipay.sofa.jraft.rhea.LeaderStateListener;
 import com.alipay.sofa.jraft.rhea.MetadataStore;
+import com.alipay.sofa.jraft.rhea.metadata.RebuildStoreTaskMetaData;
+import com.alipay.sofa.jraft.rhea.metadata.ScheduleTaskMetadata;
 import com.alipay.sofa.jraft.rhea.util.concurrent.CallerRunsPolicyWithReport;
 import com.alipay.sofa.jraft.rhea.util.concurrent.NamedThreadFactory;
 import com.alipay.sofa.jraft.util.ExecutorServiceHelper;
 import com.alipay.sofa.jraft.util.ThreadPoolUtil;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +37,6 @@ public class SchedulerManager implements LeaderStateListener {
     private final ThreadPoolExecutor     executor;
     private final MetadataStore          metadataStore;
     private final Map<String, Scheduler> schedulerMap = new ConcurrentHashMap<>();
-    private boolean                      isSchedulingTask;
     private boolean                      isLeader;
 
     public SchedulerManager(final MetadataStore metadataStore) {
@@ -43,7 +45,22 @@ public class SchedulerManager implements LeaderStateListener {
     }
 
     public void loadSchedulersFromMetadata() {
-
+        Set<String> taskIds = this.metadataStore.getUnfinishedScheduleTaskIds();
+        for (String taskId : taskIds) {
+            ScheduleTaskMetadata taskMetadata = metadataStore.getScheduleTaskMetadata(taskId);
+            ScheduleTaskMetadata.ScheduleTaskType taskType = ScheduleTaskMetadata.ScheduleTaskType.codeOf(taskMetadata
+                .getTaskType());
+            switch (taskType) {
+                case REBUILD_STORE:
+                    RebuildStoreTaskMetaData rebuildStoreTaskMetaData = (RebuildStoreTaskMetaData) taskMetadata;
+                    RebuildStoreScheduler rebuildStoreScheduler = new RebuildStoreScheduler(metadataStore,
+                        rebuildStoreTaskMetaData);
+                    registerScheduler(rebuildStoreScheduler);
+                    break;
+                default:
+                    throw new RuntimeException("Invalid task type");
+            }
+        }
     }
 
     public boolean registerScheduler(Scheduler scheduler) {

@@ -34,6 +34,16 @@ public class Instruction implements Serializable {
     private TransferLeader    transferLeader;
     private RangeSplit        rangeSplit;
 
+    public FetchStoreMeta getFetchStoreMeta() {
+        return fetchStoreMeta;
+    }
+
+    public void setFetchStoreMeta(final FetchStoreMeta fetchStoreMeta) {
+        this.fetchStoreMeta = fetchStoreMeta;
+    }
+
+    private FetchStoreMeta fetchStoreMeta;
+
     public Region getRegion() {
         return region;
     }
@@ -76,7 +86,7 @@ public class Instruction implements Serializable {
 
         private static final long serialVersionUID = -6753587746283650702L;
 
-        // TODO support add/update peer
+        // TODO support add/update peersr
     }
 
     public static class TransferLeader implements Serializable {
@@ -126,5 +136,9 @@ public class Instruction implements Serializable {
         public String toString() {
             return "RangeSplit{" + "newRegionId=" + newRegionId + '}';
         }
+    }
+
+    public static class FetchStoreMeta implements Serializable {
+        private static final long serialVersionUID = 2737039505140385044L;
     }
 }

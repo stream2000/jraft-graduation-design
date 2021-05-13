@@ -105,11 +105,11 @@ public interface MetadataStore {
 
     Map<Long /* storeId */, Endpoint> unsafeGetStoreIdsByEndpoints(final long clusterId, final List<Endpoint> endpoints);
 
-    Set<String> getUnfinishedScheduleTaskIds(final long clusterId);
+    Set<String> getUnfinishedScheduleTaskIds();
 
-    ScheduleTaskMetadata getScheduleTaskMetadata(final long clusterId, String taskId);
+    ScheduleTaskMetadata getScheduleTaskMetadata(String taskId);
 
-    CompletableFuture<Boolean> saveScheduleTaskMetadata(final long clusterId, final ScheduleTaskMetadata metadata);
+    CompletableFuture<Boolean> setScheduleTaskMetadata(final long clusterId, final ScheduleTaskMetadata metadata);
 
     /**
      * Clear the cache.

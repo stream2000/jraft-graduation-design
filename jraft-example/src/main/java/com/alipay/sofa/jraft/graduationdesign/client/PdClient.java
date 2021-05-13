@@ -29,7 +29,7 @@ public class PdClient {
     public static void main(String[] args) {
         final Client client = new Client();
         client.init();
-        submitRebuildRequest(client.getRheaKVStore());
+        //        submitRebuildRequest(client.getRheaKVStore());
         listClusterInfo(client.getRheaKVStore());
         client.shutdown();
     }
@@ -46,7 +46,7 @@ public class PdClient {
     public static void submitRebuildRequest(final RheaKVStore rheaKVStore) {
         PlacementDriverClient pdClient = rheaKVStore.getPlacementDriverClient();
         RemotePlacementDriverClient remotePdClient = (RemotePlacementDriverClient) pdClient;
-        String taskId = remotePdClient.getClusterManagementRpcClient().submitRebuildStoreRequest(111, 0, 1);
+        String taskId = remotePdClient.getClusterManagementRpcClient().submitRebuildStoreRequest(111, 0, 3);
         System.out.println(taskId);
     }
 

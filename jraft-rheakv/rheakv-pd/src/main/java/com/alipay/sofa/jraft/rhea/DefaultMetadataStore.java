@@ -62,7 +62,12 @@ public class DefaultMetadataStore implements MetadataStore {
     private final ConcurrentMap<String, LongSequence> regionSequenceMap    = Maps.newConcurrentMap();
     private final ConcurrentMap<Long, Set<Long>>      clusterStoreIdsCache = Maps.newConcurrentMapLong();
     private final Serializer                          serializer           = Serializers.getDefault();
-    private final RheaKVStore                         rheaKVStore;
+
+    public RheaKVStore getRheaKVStore() {
+        return rheaKVStore;
+    }
+
+    private final RheaKVStore rheaKVStore;
 
     public DefaultMetadataStore(RheaKVStore rheaKVStore) {
         this.rheaKVStore = rheaKVStore;
@@ -267,8 +272,8 @@ public class DefaultMetadataStore implements MetadataStore {
     }
 
     @Override
-    public Set<String> getUnfinishedScheduleTaskIds(final long clusterId) {
-        String unfinishedSchedulerTaskKey = MetadataKeyHelper.getSchedulerTaskPrefix(clusterId);
+    public Set<String> getUnfinishedScheduleTaskIds() {
+        String unfinishedSchedulerTaskKey = MetadataKeyHelper.getSchedulerTaskPrefix();
         List<KVEntry> kvEntries = this.rheaKVStore.bScan(unfinishedSchedulerTaskKey, null);
         final Set<String> taskIds = new HashSet<>(kvEntries.size());
         for (KVEntry entry : kvEntries) {
@@ -280,8 +285,8 @@ public class DefaultMetadataStore implements MetadataStore {
     }
 
     @Override
-    public ScheduleTaskMetadata getScheduleTaskMetadata(final long clusterId, final String taskId) {
-        final String key = MetadataKeyHelper.getSchedulerTaskKey(clusterId, taskId);
+    public ScheduleTaskMetadata getScheduleTaskMetadata(final String taskId) {
+        final String key = MetadataKeyHelper.getSchedulerTaskKey(taskId);
         final byte[] bytes = this.rheaKVStore.bGet(key);
         if (bytes == null) {
             return null;
@@ -290,8 +295,8 @@ public class DefaultMetadataStore implements MetadataStore {
     }
 
     @Override
-    public CompletableFuture<Boolean> saveScheduleTaskMetadata(final long clusterId, final ScheduleTaskMetadata metadata) {
-        final String key = MetadataKeyHelper.getSchedulerTaskKey(clusterId, metadata.getTaskId());
+    public CompletableFuture<Boolean> setScheduleTaskMetadata(final long clusterId, final ScheduleTaskMetadata metadata) {
+        final String key = MetadataKeyHelper.getSchedulerTaskKey(metadata.getTaskId());
         final byte[] bytes = this.serializer.writeObject(metadata);
         return this.rheaKVStore.put(key, bytes);
     }

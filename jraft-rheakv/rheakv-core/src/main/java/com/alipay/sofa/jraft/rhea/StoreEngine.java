@@ -19,6 +19,7 @@ package com.alipay.sofa.jraft.rhea;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -145,40 +146,8 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
             opts.setServerAddress(serverAddress);
         }
         final long metricsReportPeriod = opts.getMetricsReportPeriod();
-        // init region options
-        List<RegionEngineOptions> rOptsList = opts.getRegionEngineOptionsList();
-        if (rOptsList == null || rOptsList.isEmpty()) {
-            // -1 region
-            final RegionEngineOptions rOpts = new RegionEngineOptions();
-            rOpts.setRegionId(Constants.DEFAULT_REGION_ID);
-            rOptsList = Lists.newArrayList();
-            rOptsList.add(rOpts);
-            opts.setRegionEngineOptionsList(rOptsList);
-        }
-        final String clusterName = this.pdClient.getClusterName();
-        for (final RegionEngineOptions rOpts : rOptsList) {
-            rOpts.setRaftGroupId(JRaftHelper.getJRaftGroupId(clusterName, rOpts.getRegionId()));
-            rOpts.setServerAddress(serverAddress);
-            if (Strings.isBlank(rOpts.getInitialServerList())) {
-                // if blank, extends parent's value
-                rOpts.setInitialServerList(opts.getInitialServerList());
-            }
-            if (rOpts.getNodeOptions() == null) {
-                // copy common node options
-                rOpts.setNodeOptions(opts.getCommonNodeOptions() == null ? new NodeOptions() : opts
-                    .getCommonNodeOptions().copy());
-            }
-            if (rOpts.getMetricsReportPeriod() <= 0 && metricsReportPeriod > 0) {
-                // extends store opts
-                rOpts.setMetricsReportPeriod(metricsReportPeriod);
-            }
-        }
         // init store
         final Store store = this.pdClient.getStoreMetadata(opts);
-        if (store == null || store.getRegions() == null || store.getRegions().isEmpty()) {
-            LOG.error("Empty store metadata: {}.", store);
-            return false;
-        }
         this.storeId = store.getId();
         // init executors
         if (this.readIndexExecutor == null) {
@@ -651,6 +620,64 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
         return true;
     }
 
+    public boolean resetAllRegionEngine(final Store store) {
+        for (Region region : store.getRegions()) {
+            initRegionEngine(new RegionEngineOptions(), region);
+        }
+        return true;
+    }
+
+    private boolean initRegionEngine(final RegionEngineOptions rOpts, Region region) {
+        StoreEngineOptions opts = getStoreOpts();
+        String clusterName = this.pdClient.getClusterName();
+        Endpoint serverAddress = opts.getServerAddress();
+        final long metricsReportPeriod = opts.getMetricsReportPeriod();
+
+        // init region engine opts
+        rOpts.setRaftGroupId(JRaftHelper.getJRaftGroupId(clusterName, rOpts.getRegionId()));
+        rOpts.setServerAddress(serverAddress);
+        if (Strings.isBlank(rOpts.getInitialServerList())) {
+            if (region.getPeers() == null || region.getPeers().isEmpty()) {
+                // if blank, extends parent's value
+                rOpts.setInitialServerList(opts.getInitialServerList());
+            } else {
+                Configuration conf = new Configuration();
+                conf.setPeers(JRaftHelper.toJRaftPeerIdList(region.getPeers()));
+                rOpts.setInitialServerList(conf.toString());
+            }
+        }
+        if (rOpts.getNodeOptions() == null) {
+            // copy common node options
+            rOpts.setNodeOptions(opts.getCommonNodeOptions() == null ? new NodeOptions() : opts.getCommonNodeOptions()
+                .copy());
+        }
+        if (rOpts.getMetricsReportPeriod() <= 0 && metricsReportPeriod > 0) {
+            // extends store opts
+            rOpts.setMetricsReportPeriod(metricsReportPeriod);
+        }
+
+        // init region engine
+        if (!inConfiguration(rOpts.getServerAddress().toString(), rOpts.getInitialServerList())) {
+            return true;
+        }
+        String baseRaftDataPath = this.storeOpts.getRaftDataPath();
+        if (Strings.isBlank(rOpts.getRaftDataPath())) {
+            final String childPath = "raft_data_region_" + region.getId() + "_" + serverAddress.getPort();
+            rOpts.setRaftDataPath(Paths.get(baseRaftDataPath, childPath).toString());
+        }
+        Requires.requireNonNull(region.getRegionEpoch(), "regionEpoch");
+        final RegionEngine engine = new RegionEngine(region, this);
+        if (engine.init(rOpts)) {
+            final RegionKVService regionKVService = new DefaultRegionKVService(engine);
+            registerRegionKVService(regionKVService);
+            this.regionEngineTable.put(region.getId(), engine);
+        } else {
+            LOG.error("Fail to init [RegionEngine: {}].", region);
+            return false;
+        }
+        return true;
+    }
+
     private boolean initAllRegionEngine(final StoreEngineOptions opts, final Store store) {
         Requires.requireNonNull(opts, "opts");
         Requires.requireNonNull(store, "store");
@@ -662,31 +689,14 @@ public class StoreEngine implements Lifecycle<StoreEngineOptions>, Describer {
                 LOG.error("Fail to make dir for raftDataPath: {}.", baseRaftDataPath);
                 return false;
             }
-        } else {
-            baseRaftDataPath = "";
         }
-        final Endpoint serverAddress = opts.getServerAddress();
         final List<RegionEngineOptions> rOptsList = opts.getRegionEngineOptionsList();
+        // from here
         final List<Region> regionList = store.getRegions();
         Requires.requireTrue(rOptsList.size() == regionList.size());
         for (int i = 0; i < rOptsList.size(); i++) {
-            final RegionEngineOptions rOpts = rOptsList.get(i);
-            if (!inConfiguration(rOpts.getServerAddress().toString(), rOpts.getInitialServerList())) {
-                continue;
-            }
-            final Region region = regionList.get(i);
-            if (Strings.isBlank(rOpts.getRaftDataPath())) {
-                final String childPath = "raft_data_region_" + region.getId() + "_" + serverAddress.getPort();
-                rOpts.setRaftDataPath(Paths.get(baseRaftDataPath, childPath).toString());
-            }
-            Requires.requireNonNull(region.getRegionEpoch(), "regionEpoch");
-            final RegionEngine engine = new RegionEngine(region, this);
-            if (engine.init(rOpts)) {
-                final RegionKVService regionKVService = new DefaultRegionKVService(engine);
-                registerRegionKVService(regionKVService);
-                this.regionEngineTable.put(region.getId(), engine);
-            } else {
-                LOG.error("Fail to init [RegionEngine: {}].", region);
+            boolean ok = initRegionEngine(rOptsList.get(i), regionList.get(i));
+            if (!ok) {
                 return false;
             }
         }

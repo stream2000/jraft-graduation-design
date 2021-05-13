@@ -22,8 +22,26 @@ public class ScheduleTaskMetadata implements Serializable {
 
     private static final long serialVersionUID = -3475650546211662731L;
 
-    private String            taskId;
-    private int               taskType;
+    public int getClusterId() {
+        return clusterId;
+    }
+
+    public void setClusterId(final int clusterId) {
+        this.clusterId = clusterId;
+    }
+
+    private int    clusterId;
+    private String taskId;
+
+    public int getTaskType() {
+        return taskType;
+    }
+
+    public void setTaskType(final int taskType) {
+        this.taskType = taskType;
+    }
+
+    private int taskType;
 
     public String getTaskId() {
         return taskId;
