@@ -36,7 +36,6 @@ import com.alipay.sofa.jraft.rhea.storage.CASEntry;
 import com.alipay.sofa.jraft.rhea.util.Lists;
 import com.alipay.sofa.jraft.rhea.util.Pair;
 import com.alipay.sofa.jraft.util.BytesUtil;
-import com.oracle.tools.packager.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,11 +47,11 @@ import java.util.UUID;
 
 public class RebuildStoreScheduler extends Scheduler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RebuildStoreScheduler.class);
+    private static final Logger            LOG        = LoggerFactory.getLogger(RebuildStoreScheduler.class);
     private final RebuildStoreTaskMetaData taskMeta;
-    private final RheaKVStore rheaKVStore;
-    private final String taskKey;
-    private final Serializer serializer = Serializers.getDefault();
+    private final RheaKVStore              rheaKVStore;
+    private final String                   taskKey;
+    private final Serializer               serializer = Serializers.getDefault();
 
     public RebuildStoreScheduler(final MetadataStore metadataStore, RebuildStoreTaskMetaData taskMeta) {
         super(metadataStore);
@@ -111,8 +110,8 @@ public class RebuildStoreScheduler extends Scheduler {
         Store fromStoreMeta = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getFromStoreId());
         taskMeta.setTaskStatusCode(TaskStatus.RESET_STORE.getCode());
         taskMeta.setFromStoreMeta(fromStoreMeta);
-        taskMeta.setResetStoreSubTask(
-                new RebuildStoreTaskMetaData.ResetStoreSubTask(RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE));
+        taskMeta.setResetStoreSubTask(new RebuildStoreTaskMetaData.ResetStoreSubTask(
+            RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE));
         if (!CASUpdateTaskMeta(taskMetaExpect)) {
             return;
         }
@@ -263,12 +262,14 @@ public class RebuildStoreScheduler extends Scheduler {
                     Configuration regionCurrentConf = new Configuration();
                     stats.getKey().getPeers().forEach(p -> regionCurrentConf.addPeer(JRaftHelper.toJRaftPeerId(p)));
                     if (regionCurrentConf.equals(subTask.getNewConfiguration())) {
-                        LOG.info("RebuildStoreTask with id {} Region {} finished conf change", taskMeta.getTaskId(), stats.getKey());
+                        LOG.info("RebuildStoreTask with id {} Region {} finished conf change", taskMeta.getTaskId(),
+                                stats.getKey());
                         unfinishedTaskSet.remove(stats.getKey().getId());
                         subTask.setFinished(true);
                         this.metadataStore.deleteChangePeerSubTask(stats.getKey().getId());
                     } else {
-                        LOG.info("RebuildStoreTask with id {} Region {} haven't finished conf change", taskMeta.getTaskId(), stats.getKey());
+                        LOG.info("RebuildStoreTask with id {} Region {} haven't finished conf change",
+                                taskMeta.getTaskId(), stats.getKey());
                     }
                 }
                 Thread.sleep(1000);
