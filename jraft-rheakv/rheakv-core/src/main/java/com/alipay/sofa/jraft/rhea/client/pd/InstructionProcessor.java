@@ -16,6 +16,7 @@
  */
 package com.alipay.sofa.jraft.rhea.client.pd;
 
+import com.alipay.sofa.jraft.Node;
 import com.alipay.sofa.jraft.Status;
 import com.alipay.sofa.jraft.rhea.RegionEngine;
 import com.alipay.sofa.jraft.rhea.StoreEngine;
@@ -56,6 +57,7 @@ public class InstructionProcessor {
             processSplit(instruction);
             processTransferLeader(instruction);
             processFetchStoreMeta(instruction);
+            processChangePeer(instruction);
         }
     }
 
@@ -146,6 +148,33 @@ public class InstructionProcessor {
                 .getPlacementDriverClient()).getMetadataRpcClient();
             newStore.setNeedOverwrite(false);
             metadataRpcClient.updateStoreInfo(storeEngine.getClusterId(), newStore);
+            return true;
+        } catch (final Throwable t) {
+            LOG.error("Caught an exception on #processFetchStoreMeta: {}.", StackTraceUtil.stackTrace(t));
+            return false;
+        }
+    }
+
+    private boolean processChangePeer(final Instruction instruction) {
+        try {
+            final Instruction.ChangePeer changePeer = instruction.getChangePeer();
+            if (changePeer == null) {
+                return false;
+            }
+            final Region region = instruction.getRegion();
+            final RegionEngine engine = this.storeEngine
+                    .getRegionEngine(changePeer.getChangePeerSubTask().getRegionId());
+            if (engine == null) {
+                LOG.error("Could not found regionEngine, {}.", instruction);
+                return false;
+            }
+            if (!region.equals(engine.getRegion())) {
+                LOG.warn("Instruction [{}] is out of date.", instruction);
+                return false;
+            }
+            Node node = engine.getNode();
+            node.changePeers(changePeer.getChangePeerSubTask().getNewConfiguration(), status -> {
+            });
             return true;
         } catch (final Throwable t) {
             LOG.error("Caught an exception on #processFetchStoreMeta: {}.", StackTraceUtil.stackTrace(t));

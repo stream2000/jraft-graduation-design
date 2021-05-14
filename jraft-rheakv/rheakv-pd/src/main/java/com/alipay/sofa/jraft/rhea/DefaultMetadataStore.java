@@ -17,6 +17,7 @@
 package com.alipay.sofa.jraft.rhea;
 
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
+import com.alipay.sofa.jraft.rhea.metadata.ChangePeerSubTask;
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
 import com.alipay.sofa.jraft.rhea.metadata.Region;
 import com.alipay.sofa.jraft.rhea.metadata.RegionStats;
@@ -54,13 +55,14 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class DefaultMetadataStore implements MetadataStore {
 
-    private static final Logger                       LOG                  = LoggerFactory
-                                                                               .getLogger(DefaultMetadataStore.class);
+    private static final Logger                          LOG                  = LoggerFactory
+                                                                                  .getLogger(DefaultMetadataStore.class);
 
-    private final ConcurrentMap<String, LongSequence> storeSequenceMap     = Maps.newConcurrentMap();
-    private final ConcurrentMap<String, LongSequence> regionSequenceMap    = Maps.newConcurrentMap();
-    private final ConcurrentMap<Long, Set<Long>>      clusterStoreIdsCache = Maps.newConcurrentMapLong();
-    private final Serializer                          serializer           = Serializers.getDefault();
+    private final ConcurrentMap<String, LongSequence>    storeSequenceMap     = Maps.newConcurrentMap();
+    private final ConcurrentMap<String, LongSequence>    regionSequenceMap    = Maps.newConcurrentMap();
+    private final ConcurrentMap<Long, Set<Long>>         clusterStoreIdsCache = Maps.newConcurrentMapLong();
+    private final ConcurrentMap<Long, ChangePeerSubTask> changePeerTasksCache = Maps.newConcurrentMapLong();
+    private final Serializer                             serializer           = Serializers.getDefault();
 
     public RheaKVStore getRheaKVStore() {
         return rheaKVStore;
@@ -301,8 +303,24 @@ public class DefaultMetadataStore implements MetadataStore {
     }
 
     @Override
+    public void addChangePeerSubTask(final ChangePeerSubTask changePeerSubTask) {
+        changePeerTasksCache.put(changePeerSubTask.getRegionId(), changePeerSubTask);
+    }
+
+    @Override
+    public ChangePeerSubTask getChangePeerSubTask(final long regionId) {
+        return changePeerTasksCache.get(regionId);
+    }
+
+    @Override
+    public void deleteChangePeerSubTask(final long regionId) {
+        changePeerTasksCache.remove(regionId);
+    }
+
+    @Override
     public void invalidCache() {
         this.clusterStoreIdsCache.clear();
+        this.changePeerTasksCache.clear();
     }
 
     private Set<Long> getClusterIndex(final long clusterId) {

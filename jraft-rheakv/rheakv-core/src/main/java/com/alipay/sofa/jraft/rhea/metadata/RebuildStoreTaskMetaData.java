@@ -16,22 +16,17 @@
  */
 package com.alipay.sofa.jraft.rhea.metadata;
 
+import java.util.List;
+
 public class RebuildStoreTaskMetaData extends ScheduleTaskMetadata {
 
-    private static final long serialVersionUID = -6822059115806648547L;
-    private Long              fromStoreId;
-    private Long              toStoreId;
-    private Store             fromStoreMeta;
-    private int               taskStatusCode;
-    private ResetStoreSubTask resetStoreSubTask;
-
-    public ResetStoreSubTask getResetStoreSubTask() {
-        return resetStoreSubTask;
-    }
-
-    public void setResetStoreSubTask(final ResetStoreSubTask resetStoreSubTask) {
-        this.resetStoreSubTask = resetStoreSubTask;
-    }
+    private static final long       serialVersionUID = -6822059115806648547L;
+    private Long                    fromStoreId;
+    private Long                    toStoreId;
+    private Store                   fromStoreMeta;
+    private int                     taskStatusCode;
+    private ResetStoreSubTask       resetStoreSubTask;
+    private List<ChangePeerSubTask> changePeerSubTasks;
 
     public Store getFromStoreMeta() {
         return fromStoreMeta;
@@ -65,6 +60,22 @@ public class RebuildStoreTaskMetaData extends ScheduleTaskMetadata {
         this.taskStatusCode = taskStatusCode;
     }
 
+    public List<ChangePeerSubTask> getChangePeerSubTasks() {
+        return changePeerSubTasks;
+    }
+
+    public void setChangePeerSubTasks(final List<ChangePeerSubTask> changePeerSubTasks) {
+        this.changePeerSubTasks = changePeerSubTasks;
+    }
+
+    public ResetStoreSubTask getResetStoreSubTask() {
+        return resetStoreSubTask;
+    }
+
+    public void setResetStoreSubTask(final ResetStoreSubTask resetStoreSubTask) {
+        this.resetStoreSubTask = resetStoreSubTask;
+    }
+
     @Override
     public String toString() {
         return "RebuildStoreTaskMetaData{" + "taskId='" + getTaskId() + '\'' + ", fromStoreId=" + fromStoreId
@@ -72,7 +83,7 @@ public class RebuildStoreTaskMetaData extends ScheduleTaskMetadata {
     }
 
     public enum TaskStatus {
-        INIT(0), RESET_STORE(1), CHANGE_PEER(2), FINISHED(3), ABORT(4);
+        INIT(0), RESET_STORE(1), PREPARE_CHANGE_PEER(2), CHANGE_PEER(3), FINISHED(4), ABORT(5);
 
         private final int code;
 
@@ -97,7 +108,7 @@ public class RebuildStoreTaskMetaData extends ScheduleTaskMetadata {
     public static class ResetStoreSubTask {
 
         public static final String INIT_STATE        = "INIT";
-        public static final String RESET_STATE       = "INIT";
+        public static final String RESET_STATE       = "RESET";
         public static final String WAIT_UPDATE_STATE = "WAIT_UPDATE";
         public static final String FINISH_STATE      = "FINISH";
         private String             taskState;                        // INIT -> RESET -> WAIT_UPDATE -> FINISH

@@ -86,7 +86,15 @@ public class Instruction implements Serializable {
 
         private static final long serialVersionUID = -6753587746283650702L;
 
-        // TODO support add/update peersr
+        public ChangePeerSubTask getChangePeerSubTask() {
+            return changePeerSubTask;
+        }
+
+        public void setChangePeerSubTask(final ChangePeerSubTask changePeerSubTask) {
+            this.changePeerSubTask = changePeerSubTask;
+        }
+
+        private ChangePeerSubTask changePeerSubTask;
     }
 
     public static class TransferLeader implements Serializable {

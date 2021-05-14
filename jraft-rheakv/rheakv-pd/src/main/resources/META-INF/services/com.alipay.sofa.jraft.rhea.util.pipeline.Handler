@@ -5,3 +5,4 @@ com.alipay.sofa.jraft.rhea.pipeline.handler.RegionStatsPersistenceHandler
 com.alipay.sofa.jraft.rhea.pipeline.handler.RegionLeaderBalanceHandler
 com.alipay.sofa.jraft.rhea.pipeline.handler.SplittingJudgeByApproximateKeysHandler
 com.alipay.sofa.jraft.rhea.pipeline.handler.StoreOverwriteHandler
+com.alipay.sofa.jraft.rhea.pipeline.handler.RegionChangePeerTaskHandler

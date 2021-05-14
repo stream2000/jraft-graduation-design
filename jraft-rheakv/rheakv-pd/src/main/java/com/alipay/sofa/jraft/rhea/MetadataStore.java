@@ -16,6 +16,7 @@
  */
 package com.alipay.sofa.jraft.rhea;
 
+import com.alipay.sofa.jraft.rhea.metadata.ChangePeerSubTask;
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
 import com.alipay.sofa.jraft.rhea.metadata.Region;
 import com.alipay.sofa.jraft.rhea.metadata.RegionStats;
@@ -110,6 +111,12 @@ public interface MetadataStore {
     Pair<ScheduleTaskMetadata, byte[]> getScheduleTaskMetadata(String taskId);
 
     CompletableFuture<Boolean> setScheduleTaskMetadata(final long clusterId, final ScheduleTaskMetadata metadata);
+
+    void addChangePeerSubTask(ChangePeerSubTask changePeerSubTask);
+
+    ChangePeerSubTask getChangePeerSubTask(long regionId);
+
+    void deleteChangePeerSubTask(long regionId);
 
     /**
      * Clear the cache.

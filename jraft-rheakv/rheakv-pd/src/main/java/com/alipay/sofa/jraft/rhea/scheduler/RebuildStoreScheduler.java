@@ -23,26 +23,36 @@ import com.alipay.sofa.jraft.rhea.JRaftHelper;
 import com.alipay.sofa.jraft.rhea.MetadataKeyHelper;
 import com.alipay.sofa.jraft.rhea.MetadataStore;
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
+import com.alipay.sofa.jraft.rhea.metadata.ChangePeerSubTask;
 import com.alipay.sofa.jraft.rhea.metadata.Peer;
 import com.alipay.sofa.jraft.rhea.metadata.RebuildStoreTaskMetaData;
 import com.alipay.sofa.jraft.rhea.metadata.RebuildStoreTaskMetaData.TaskStatus;
 import com.alipay.sofa.jraft.rhea.metadata.Region;
+import com.alipay.sofa.jraft.rhea.metadata.RegionStats;
 import com.alipay.sofa.jraft.rhea.metadata.Store;
 import com.alipay.sofa.jraft.rhea.serialization.Serializer;
 import com.alipay.sofa.jraft.rhea.serialization.Serializers;
 import com.alipay.sofa.jraft.rhea.storage.CASEntry;
 import com.alipay.sofa.jraft.rhea.util.Lists;
+import com.alipay.sofa.jraft.rhea.util.Pair;
 import com.alipay.sofa.jraft.util.BytesUtil;
+import com.oracle.tools.packager.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 public class RebuildStoreScheduler extends Scheduler {
 
-    private static final Logger            LOG        = LoggerFactory.getLogger(RebuildStoreScheduler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RebuildStoreScheduler.class);
     private final RebuildStoreTaskMetaData taskMeta;
-    private final RheaKVStore              rheaKVStore;
-    private final String                   taskKey;
-    private final Serializer               serializer = Serializers.getDefault();
+    private final RheaKVStore rheaKVStore;
+    private final String taskKey;
+    private final Serializer serializer = Serializers.getDefault();
 
     public RebuildStoreScheduler(final MetadataStore metadataStore, RebuildStoreTaskMetaData taskMeta) {
         super(metadataStore);
@@ -59,10 +69,13 @@ public class RebuildStoreScheduler extends Scheduler {
         }
     }
 
-    // polling
     @Override
     public void run() {
         nextStage();
+        if (!isStopped) {
+            isStopped = true;
+            this.stopHook.run();
+        }
     }
 
     private void nextStage() {
@@ -77,10 +90,13 @@ public class RebuildStoreScheduler extends Scheduler {
             case RESET_STORE:
                 processResetStore();
                 break;
+            case PREPARE_CHANGE_PEER:
+                processPrepareChangePeer();
             case CHANGE_PEER:
                 processChangePeer();
                 break;
             case FINISHED:
+                finishTask();
                 this.isStopped = true;
                 this.stopHook.run();
                 break;
@@ -91,24 +107,16 @@ public class RebuildStoreScheduler extends Scheduler {
 
     private void processInit() {
         LOG.info("RebuildStoreSchedule task {} entered init state", taskMeta);
-        byte[] prevData = this.serializer.writeObject(taskMeta);
+        byte[] taskMetaExpect = this.serializer.writeObject(taskMeta);
         Store fromStoreMeta = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getFromStoreId());
         taskMeta.setTaskStatusCode(TaskStatus.RESET_STORE.getCode());
         taskMeta.setFromStoreMeta(fromStoreMeta);
-        taskMeta.setResetStoreSubTask(new RebuildStoreTaskMetaData.ResetStoreSubTask(
-            RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE));
-        boolean result = this.rheaKVStore.bCompareAndPut(taskKey, prevData, this.serializer.writeObject(taskMeta));
-        if (!result) {
-            // someone modified it, return directly
-            LOG.warn("Task {} was modified by another process", taskMeta.getTaskId());
-            cancel();
+        taskMeta.setResetStoreSubTask(
+                new RebuildStoreTaskMetaData.ResetStoreSubTask(RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE));
+        if (!CASUpdateTaskMeta(taskMetaExpect)) {
             return;
         }
         nextStage();
-    }
-
-    private void processChangePeer() {
-        LOG.info("RebuildStoreSchedule task {} entered change peer state", taskMeta);
     }
 
     // to reset the target store to the conf we need
@@ -163,11 +171,7 @@ public class RebuildStoreScheduler extends Scheduler {
                     if (!currentStore.isNeedOverwrite()) {
                         taskMeta.getResetStoreSubTask()
                                 .setTaskState(RebuildStoreTaskMetaData.ResetStoreSubTask.WAIT_UPDATE_STATE);
-                        boolean ok = rheaKVStore
-                                .bCompareAndPut(taskKey, taskMetaExpect, this.serializer.writeObject(taskMeta));
-                        if (!ok) {
-                            LOG.warn("Task {} was modified by another process", taskMeta.getTaskId());
-                            cancel();
+                        if (!CASUpdateTaskMeta(taskMetaExpect)) {
                             return;
                         }
                         break;
@@ -188,11 +192,9 @@ public class RebuildStoreScheduler extends Scheduler {
                 .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.WAIT_UPDATE_STATE)) {
             byte[] taskMetaExpect = this.serializer.writeObject(taskMeta);
             taskMeta.getResetStoreSubTask().setTaskState(RebuildStoreTaskMetaData.ResetStoreSubTask.FINISH_STATE);
-            taskMeta.setTaskStatusCode(TaskStatus.CHANGE_PEER.getCode());
-            boolean ok = rheaKVStore.bCompareAndPut(taskKey, taskMetaExpect, this.serializer.writeObject(taskMeta));
-            if (!ok) {
-                LOG.warn("Task {} was modified by another process", taskMeta.getTaskId());
-                cancel();
+            taskMeta.setTaskStatusCode(TaskStatus.PREPARE_CHANGE_PEER.getCode());
+            // prepare for change peer
+            if (!CASUpdateTaskMeta(taskMetaExpect)) {
                 return;
             }
         }
@@ -200,10 +202,110 @@ public class RebuildStoreScheduler extends Scheduler {
         nextStage();
     }
 
+    private void processPrepareChangePeer() {
+        LOG.info("RebuildStoreSchedule task {} entered prepare change peer state", taskMeta);
+        byte[] taskMetaExpect = this.serializer.writeObject(taskMeta);
+        // STEP1 record sub tasks
+        // generate sub tasks, store it and change state of task meta
+        Store toStoreMeta = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getToStoreId());
+        List<ChangePeerSubTask> changePeerSubTasks = new ArrayList<>();
+        for (final Region region : toStoreMeta.getRegions()) {
+            Configuration newConf = new Configuration();
+            PeerId fromStorePeer = new PeerId(taskMeta.getFromStoreMeta().getEndpoint(), 0);
+            region.getPeers().forEach(p -> newConf.addPeer(JRaftHelper.toJRaftPeerId(p)));
+            newConf.removePeer(fromStorePeer);
+            ChangePeerSubTask changePeerSubTask = new ChangePeerSubTask();
+            changePeerSubTask.setTaskId(UUID.randomUUID().toString());
+            changePeerSubTask.setParentTaskId(taskMeta.getTaskId());
+            changePeerSubTask.setNewConfiguration(newConf);
+            changePeerSubTask.setRegionId(region.getId());
+            changePeerSubTask.setClusterId(taskMeta.getClusterId());
+            changePeerSubTask.setRegion(region);
+            changePeerSubTasks.add(changePeerSubTask);
+        }
+        taskMeta.setTaskStatusCode(TaskStatus.CHANGE_PEER.getCode());
+        taskMeta.setChangePeerSubTasks(changePeerSubTasks);
+        if (!CASUpdateTaskMeta(taskMetaExpect)) {
+            return;
+        }
+        nextStage();
+    }
+
+    private void processChangePeer() {
+        LOG.info("RebuildStoreSchedule task {} entered change peer state", taskMeta);
+        if (taskMeta.getChangePeerSubTasks() == null) {
+            abortTask();
+            return;
+        }
+
+        // record expect
+        byte[] taskMetaExpect = this.serializer.writeObject(taskMeta);
+
+        // step1: add the task to in memory cache
+        Set<Long> unfinishedTaskSet = new HashSet<>();
+        for (ChangePeerSubTask subTask : taskMeta.getChangePeerSubTasks()) {
+            this.metadataStore.addChangePeerSubTask(subTask);
+            unfinishedTaskSet.add(subTask.getRegionId());
+        }
+
+        // step2: wait update
+        while (!unfinishedTaskSet.isEmpty()) {
+            try {
+                for (ChangePeerSubTask subTask : taskMeta.getChangePeerSubTasks()) {
+                    if (!unfinishedTaskSet.contains(subTask.getRegionId())) {
+                        continue;
+                    }
+                    Pair<Region, RegionStats> stats = this.metadataStore
+                            .getRegionStats(subTask.getClusterId(), subTask.getRegion());
+                    if (stats == null) {
+                        continue;
+                    }
+                    Configuration regionCurrentConf = new Configuration();
+                    stats.getKey().getPeers().forEach(p -> regionCurrentConf.addPeer(JRaftHelper.toJRaftPeerId(p)));
+                    if (regionCurrentConf.equals(subTask.getNewConfiguration())) {
+                        LOG.info("RebuildStoreTask with id {} Region {} finished conf change", taskMeta.getTaskId(), stats.getKey());
+                        unfinishedTaskSet.remove(stats.getKey().getId());
+                        subTask.setFinished(true);
+                        this.metadataStore.deleteChangePeerSubTask(stats.getKey().getId());
+                    } else {
+                        LOG.info("RebuildStoreTask with id {} Region {} haven't finished conf change", taskMeta.getTaskId(), stats.getKey());
+                    }
+                }
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                cancel();
+                return;
+            }
+        }
+
+        taskMeta.setTaskStatusCode(TaskStatus.FINISHED.getCode());
+
+        if (!CASUpdateTaskMeta(taskMetaExpect)) {
+            return;
+        }
+
+        nextStage();
+
+    }
+
+    boolean CASUpdateTaskMeta(byte[] expect) {
+        boolean ok = rheaKVStore.bCompareAndPut(taskKey, expect, this.serializer.writeObject(taskMeta));
+        if (!ok) {
+            LOG.warn("Task {} was modified by another process", taskMeta.getTaskId());
+            cancel();
+        }
+        return ok;
+    }
+
+    private void finishTask() {
+        this.rheaKVStore.delete(taskKey);
+    }
+
     // TODO: use CAS to abort task
     private void abortTask() {
         LOG.warn("Task {}  is aborted ", taskMeta);
         taskMeta.setTaskStatusCode(TaskStatus.ABORT.getCode());
+        // try to set task status to aborted and archive it. If failed, return directly
         this.rheaKVStore.bPut(taskKey, serializer.writeObject(taskMeta));
         this.rheaKVStore.delete(taskKey);
         cancel();

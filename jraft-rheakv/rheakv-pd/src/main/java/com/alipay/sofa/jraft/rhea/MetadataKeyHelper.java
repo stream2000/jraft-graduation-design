@@ -117,4 +117,14 @@ public final class MetadataKeyHelper {
             .append(taskId) //
             .toString();
     }
+
+    public static String getChangePeerSubTaskKey(final String taskId) {
+        return StringBuilderHelper.get() //
+            .append("pd_change_peer_sub_task") //
+            .append(DELIMITER) //
+            .append(UNFINISHED_FLAG) //
+            .append(DELIMITER) //
+            .append(taskId) //
+            .toString();
+    }
 }

@@ -30,7 +30,7 @@ public class PdClient {
     public static void main(String[] args) {
         final Client client = new Client();
         client.init();
-        submitRebuildRequest(client.getRheaKVStore());
+//        submitRebuildRequest(client.getRheaKVStore());
         listClusterInfo(client.getRheaKVStore());
         client.shutdown();
     }

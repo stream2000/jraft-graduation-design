@@ -21,8 +21,9 @@ package com.alipay.sofa.jraft.rhea.options;
  */
 public class HeartbeatOptions {
 
-    private long storeHeartbeatIntervalSeconds  = 60;
-    private long regionHeartbeatIntervalSeconds = 60;
+    // temp modify for test
+    private long storeHeartbeatIntervalSeconds  = 10;
+    private long regionHeartbeatIntervalSeconds = 10;
     private int  heartbeatRpcTimeoutMillis      = 5000;
 
     public long getStoreHeartbeatIntervalSeconds() {

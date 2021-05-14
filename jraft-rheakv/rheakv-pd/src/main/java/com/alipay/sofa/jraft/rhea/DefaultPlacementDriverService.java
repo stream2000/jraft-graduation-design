@@ -328,10 +328,6 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
         metaData.setResetStoreSubTask(new RebuildStoreTaskMetaData.ResetStoreSubTask(
             RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE));
 
-        // TODO: persistent the task meta data and start the scheduler
-        // once we have persisted the meta, return the task id to user
-        // user can query the task status by task id
-
         try {
             boolean result = this.metadataStore.setScheduleTaskMetadata(clusterId, metaData).get();
             if (!result) {
@@ -377,6 +373,8 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
         for (final Handler h : sortedHandlers) {
             pipeline.addLast(h);
         }
+
+        // TODO: add the handler we need
 
         // first handler
         pipeline.addFirst(this.pipelineInvoker, "logHandler", new LogHandler());
