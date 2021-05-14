@@ -16,6 +16,7 @@
  */
 package com.alipay.sofa.jraft.rhea.client.pd;
 
+import com.alipay.sofa.jraft.rhea.RegionEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,6 +101,7 @@ public class StatsCollector {
     }
 
     public RegionStats collectRegionStats(final Region region, final TimeInterval timeInterval) {
+        final RegionEngine engine = this.storeEngine.getRegionEngine(region.getId());
         final RegionStats stats = new RegionStats();
         stats.setRegionId(region.getId());
         // Leader Peer sending the heartbeat
@@ -122,6 +124,8 @@ public class StatsCollector {
         stats.setApproximateKeys(this.rawKVStore.getApproximateKeysInRange(region.getStartKey(), region.getEndKey()));
         // Actually reported time interval
         stats.setInterval(timeInterval);
+        // current peers
+        stats.setPeers(engine.getNode().listPeers());
         LOG.info("Collect [RegionStats]: {}.", stats);
         return stats;
     }

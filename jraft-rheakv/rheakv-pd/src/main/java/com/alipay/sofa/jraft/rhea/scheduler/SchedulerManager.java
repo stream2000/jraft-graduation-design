@@ -50,6 +50,10 @@ public class SchedulerManager implements LeaderStateListener {
         Set<String> taskIds = this.metadataStore.getUnfinishedScheduleTaskIds();
         for (String taskId : taskIds) {
             Pair<ScheduleTaskMetadata, byte[]> pair = metadataStore.getScheduleTaskMetadata(taskId);
+            if (pair == null) {
+                // the task is deleted
+                continue;
+            }
             ScheduleTaskMetadata taskMetadata = pair.getKey();
             ScheduleTaskMetadata.ScheduleTaskType taskType = ScheduleTaskMetadata.ScheduleTaskType.codeOf(taskMetadata
                 .getTaskType());

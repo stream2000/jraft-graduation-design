@@ -16,6 +16,9 @@
  */
 package com.alipay.sofa.jraft.rhea.metadata;
 
+import com.alipay.sofa.jraft.conf.Configuration;
+import com.alipay.sofa.jraft.entity.PeerId;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -48,6 +51,8 @@ public class RegionStats implements Serializable {
     private long              approximateKeys;
     // Actually reported time interval
     private TimeInterval      interval;
+    // Current conf
+    private List<PeerId>      peers;
 
     public long getRegionId() {
         return regionId;
@@ -135,6 +140,14 @@ public class RegionStats implements Serializable {
 
     public void setInterval(TimeInterval interval) {
         this.interval = interval;
+    }
+
+    public List<PeerId> getPeers() {
+        return peers;
+    }
+
+    public void setPeers(final List<PeerId> peers) {
+        this.peers = peers;
     }
 
     @Override
