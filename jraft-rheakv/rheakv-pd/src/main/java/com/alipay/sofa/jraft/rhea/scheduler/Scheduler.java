@@ -16,19 +16,42 @@
  */
 package com.alipay.sofa.jraft.rhea.scheduler;
 
+import com.alipay.sofa.jraft.rhea.DefaultMetadataStore;
 import com.alipay.sofa.jraft.rhea.MetadataStore;
+import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
+import com.alipay.sofa.jraft.rhea.serialization.Serializer;
+import com.alipay.sofa.jraft.rhea.serialization.Serializers;
 
 public abstract class Scheduler implements Runnable {
 
-    MetadataStore    metadataStore;
-    StopHook         stopHook;
-    volatile boolean isStopped;
+    MetadataStore               metadataStore;
+    StopHook                    stopHook;
+    volatile boolean            isStopped;
+    protected final Serializer  serializer = Serializers.getDefault();
+    protected final RheaKVStore rheaKVStore;
 
     Scheduler(MetadataStore metadataStore) {
         this.metadataStore = metadataStore;
+        this.rheaKVStore = ((DefaultMetadataStore) metadataStore).getRheaKVStore();
     }
 
-    abstract void cancel();
+    @Override
+    public void run() {
+        nextStage();
+        if (!isStopped) {
+            isStopped = true;
+            this.stopHook.run();
+        }
+    }
+
+    protected abstract void nextStage();
+
+    void cancel() {
+        if (!isStopped) {
+            isStopped = true;
+            this.stopHook.run();
+        }
+    }
 
     void onStop(StopHook stopHook) {
         this.stopHook = stopHook;

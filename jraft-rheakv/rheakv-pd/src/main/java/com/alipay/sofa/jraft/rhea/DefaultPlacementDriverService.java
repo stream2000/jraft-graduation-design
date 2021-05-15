@@ -42,6 +42,7 @@ import com.alipay.sofa.jraft.rhea.metadata.Instruction;
 import com.alipay.sofa.jraft.rhea.metadata.RebuildStoreTaskMetaData;
 import com.alipay.sofa.jraft.rhea.metadata.ScheduleTaskMetadata;
 import com.alipay.sofa.jraft.rhea.metadata.Store;
+import com.alipay.sofa.jraft.rhea.metadata.UpScaleClusterMetadata;
 import com.alipay.sofa.jraft.rhea.options.PlacementDriverServerOptions;
 import com.alipay.sofa.jraft.rhea.pipeline.event.RegionPingEvent;
 import com.alipay.sofa.jraft.rhea.pipeline.event.StorePingEvent;
@@ -49,6 +50,7 @@ import com.alipay.sofa.jraft.rhea.pipeline.handler.LogHandler;
 import com.alipay.sofa.jraft.rhea.pipeline.handler.PlacementDriverTailHandler;
 import com.alipay.sofa.jraft.rhea.scheduler.RebuildStoreScheduler;
 import com.alipay.sofa.jraft.rhea.scheduler.SchedulerManager;
+import com.alipay.sofa.jraft.rhea.scheduler.UpscaleClusterScheduler;
 import com.alipay.sofa.jraft.rhea.util.StackTraceUtil;
 import com.alipay.sofa.jraft.rhea.util.concurrent.CallerRunsPolicyWithReport;
 import com.alipay.sofa.jraft.rhea.util.concurrent.NamedThreadFactory;
@@ -348,7 +350,35 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
     @Override
     public void handleUpscaleClusterRequest(final UpScaleClusterRequest request,
                                             final RequestProcessClosure<BaseRequest, BaseResponse> closure) {
+        final long clusterId = request.getClusterId();
+        final SubmitClusterConfChangeResponse response = new SubmitClusterConfChangeResponse();
+        response.setClusterId(clusterId);
+        LOG.info("Handling {}.", request);
+        if (!this.isLeader) {
+            response.setError(Errors.NOT_LEADER);
+            closure.sendResponse(response);
+            return;
+        }
 
+        UpScaleClusterMetadata metaData = new UpScaleClusterMetadata();
+        metaData.setTaskId(UUID.randomUUID().toString());
+        metaData.setClusterId((int) request.getClusterId());
+        metaData.setTaskType(ScheduleTaskMetadata.ScheduleTaskType.UPSCALE_CLUSTER.getCode());
+
+        try {
+            boolean result = this.metadataStore.setScheduleTaskMetadata(clusterId, metaData).get();
+            if (!result) {
+                response.setError(Errors.UNKNOWN_SERVER_ERROR);
+            } else {
+                response.setValue(metaData.getTaskId());
+                UpscaleClusterScheduler upscaleClusterScheduler = new UpscaleClusterScheduler(metadataStore, metaData);
+                this.schedulerManager.registerScheduler(upscaleClusterScheduler);
+            }
+        } catch (final Throwable t) {
+            LOG.error("Failed to handle: {}, {}.", request, StackTraceUtil.stackTrace(t));
+            response.setError(Errors.forException(t));
+        }
+        closure.sendResponse(response);
     }
 
     @Override

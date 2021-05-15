@@ -33,6 +33,6 @@ public class UpScaleClusterRequest extends BaseRequest {
 
     @Override
     public byte magic() {
-        return 0;
+        return UPSCALE_CLUSTER;
     }
 }

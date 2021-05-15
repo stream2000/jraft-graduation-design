@@ -16,55 +16,38 @@
  */
 package com.alipay.sofa.jraft.rhea.metadata;
 
-import java.io.Serializable;
+import java.util.List;
 
-public class ScheduleTaskMetadata implements Serializable {
+public class UpScaleClusterMetadata extends ScheduleTaskMetadata {
+    private static final long       serialVersionUID = 1762452908908603860L;
 
-    private static final long serialVersionUID = -3475650546211662731L;
-    private int               clusterId;
-    private String            taskId;
-    private int               taskType;
+    private int                     taskStatusCode;
+    private List<ChangePeerSubTask> changePeerSubTasks;
 
-    public int getClusterId() {
-        return clusterId;
+    public int getTaskStatusCode() {
+        return taskStatusCode;
     }
 
-    public void setClusterId(final int clusterId) {
-        this.clusterId = clusterId;
+    public void setTaskStatusCode(final int taskStatusCode) {
+        this.taskStatusCode = taskStatusCode;
     }
 
-    public int getTaskType() {
-        return taskType;
-    }
-
-    public void setTaskType(final int taskType) {
-        this.taskType = taskType;
-    }
-
-    public String getTaskId() {
-        return taskId;
-    }
-
-    public void setTaskId(final String taskId) {
-        this.taskId = taskId;
-    }
-
-    public enum ScheduleTaskType {
-        REBUILD_STORE(0), UPSCALE_CLUSTER(1), ;
+    public enum TaskStatus {
+        INIT(0), RESET_STORE(1), PREPARE_CHANGE_PEER(2), CHANGE_PEER(3), FINISHED(4), ABORT(5);
 
         private final int code;
 
-        ScheduleTaskType(int code) {
+        TaskStatus(int code) {
             this.code = code;
         }
 
-        public static ScheduleTaskType codeOf(int code) {
-            for (ScheduleTaskType status : values()) {
+        public static TaskStatus codeOf(int code) {
+            for (TaskStatus status : values()) {
                 if (status.getCode() == code) {
                     return status;
                 }
             }
-            throw new RuntimeException("Invalid task type code");
+            throw new RuntimeException("Invalid status code");
         }
 
         public int getCode() {

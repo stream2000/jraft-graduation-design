@@ -18,11 +18,9 @@ package com.alipay.sofa.jraft.rhea.scheduler;
 
 import com.alipay.sofa.jraft.conf.Configuration;
 import com.alipay.sofa.jraft.entity.PeerId;
-import com.alipay.sofa.jraft.rhea.DefaultMetadataStore;
 import com.alipay.sofa.jraft.rhea.JRaftHelper;
 import com.alipay.sofa.jraft.rhea.MetadataKeyHelper;
 import com.alipay.sofa.jraft.rhea.MetadataStore;
-import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
 import com.alipay.sofa.jraft.rhea.metadata.ChangePeerSubTask;
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
 import com.alipay.sofa.jraft.rhea.metadata.Peer;
@@ -31,8 +29,6 @@ import com.alipay.sofa.jraft.rhea.metadata.RebuildStoreTaskMetaData.TaskStatus;
 import com.alipay.sofa.jraft.rhea.metadata.Region;
 import com.alipay.sofa.jraft.rhea.metadata.RegionStats;
 import com.alipay.sofa.jraft.rhea.metadata.Store;
-import com.alipay.sofa.jraft.rhea.serialization.Serializer;
-import com.alipay.sofa.jraft.rhea.serialization.Serializers;
 import com.alipay.sofa.jraft.rhea.storage.CASEntry;
 import com.alipay.sofa.jraft.rhea.util.Lists;
 import com.alipay.sofa.jraft.rhea.util.Pair;
@@ -51,37 +47,18 @@ import java.util.UUID;
 
 public class RebuildStoreScheduler extends Scheduler {
 
-    private static final Logger            LOG        = LoggerFactory.getLogger(RebuildStoreScheduler.class);
+    private static final Logger            LOG = LoggerFactory.getLogger(RebuildStoreScheduler.class);
     private final RebuildStoreTaskMetaData taskMeta;
-    private final RheaKVStore              rheaKVStore;
     private final String                   taskKey;
-    private final Serializer               serializer = Serializers.getDefault();
 
     public RebuildStoreScheduler(final MetadataStore metadataStore, RebuildStoreTaskMetaData taskMeta) {
         super(metadataStore);
         this.taskMeta = taskMeta;
         this.taskKey = MetadataKeyHelper.getSchedulerTaskKey(taskMeta.getTaskId());
-        this.rheaKVStore = ((DefaultMetadataStore) metadataStore).getRheaKVStore();
     }
 
     @Override
-    public void cancel() {
-        if (!isStopped) {
-            isStopped = true;
-            this.stopHook.run();
-        }
-    }
-
-    @Override
-    public void run() {
-        nextStage();
-        if (!isStopped) {
-            isStopped = true;
-            this.stopHook.run();
-        }
-    }
-
-    private void nextStage() {
+    protected void nextStage() {
         if (isStopped) {
             return;
         }
@@ -292,10 +269,10 @@ public class RebuildStoreScheduler extends Scheduler {
 
         List<CASEntry> casEntries = new ArrayList<>();
 
-        casEntries.add(new CASEntry(BytesUtil.writeUtf8(taskKey), taskMetaExpect, this.serializer.writeObject(taskMeta)));
+        casEntries
+                .add(new CASEntry(BytesUtil.writeUtf8(taskKey), taskMetaExpect, this.serializer.writeObject(taskMeta)));
         Cluster cluster = metadataStore.getClusterInfo(taskMeta.getClusterId());
         Requires.requireNonNull(cluster);
-
 
         for (Store store : cluster.getStores()) {
             byte[] storeExpect = this.serializer.writeObject(store);
@@ -305,7 +282,8 @@ public class RebuildStoreScheduler extends Scheduler {
                     region.setPeers(modifyRegionsMap.get(region.getId()).getPeers());
                 }
             }
-            casEntries.add(new CASEntry(BytesUtil.writeUtf8(storeKey), storeExpect, this.serializer.writeObject(store)));
+            casEntries
+                    .add(new CASEntry(BytesUtil.writeUtf8(storeKey), storeExpect, this.serializer.writeObject(store)));
         }
 
         if (!this.rheaKVStore.bCompareAndPutAll(casEntries)) {

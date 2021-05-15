@@ -20,6 +20,7 @@ import com.alipay.sofa.jraft.rhea.LeaderStateListener;
 import com.alipay.sofa.jraft.rhea.MetadataStore;
 import com.alipay.sofa.jraft.rhea.metadata.RebuildStoreTaskMetaData;
 import com.alipay.sofa.jraft.rhea.metadata.ScheduleTaskMetadata;
+import com.alipay.sofa.jraft.rhea.metadata.UpScaleClusterMetadata;
 import com.alipay.sofa.jraft.rhea.serialization.Serializers;
 import com.alipay.sofa.jraft.rhea.util.Pair;
 import com.alipay.sofa.jraft.rhea.util.concurrent.CallerRunsPolicyWithReport;
@@ -65,6 +66,14 @@ public class SchedulerManager implements LeaderStateListener {
                         rebuildStoreTaskMetaData);
                     registerScheduler(rebuildStoreScheduler);
                     break;
+                case UPSCALE_CLUSTER:
+                    UpScaleClusterMetadata upScaleClusterMetadata = Serializers.getDefault().readObject(
+                        pair.getValue(), UpScaleClusterMetadata.class);
+                    UpscaleClusterScheduler upscaleClusterScheduler = new UpscaleClusterScheduler(metadataStore,
+                        upScaleClusterMetadata);
+                    registerScheduler(upscaleClusterScheduler);
+                    break;
+
                 default:
                     throw new RuntimeException("Invalid task type");
             }
