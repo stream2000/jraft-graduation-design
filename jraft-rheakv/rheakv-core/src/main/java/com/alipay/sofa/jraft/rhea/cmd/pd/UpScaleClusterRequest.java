@@ -16,12 +16,23 @@
  */
 package com.alipay.sofa.jraft.rhea.cmd.pd;
 
+import com.alipay.sofa.jraft.rhea.metadata.MigrationPlan;
+
 import java.util.List;
 
 public class UpScaleClusterRequest extends BaseRequest {
 
     private static final long serialVersionUID = -4152455264960650123L;
+    private MigrationPlan     migrationPlan;
     private List<Long>        newStoreIds;
+
+    public MigrationPlan getMigrationPlan() {
+        return migrationPlan;
+    }
+
+    public void setMigrationPlan(final MigrationPlan migrationPlan) {
+        this.migrationPlan = migrationPlan;
+    }
 
     public List<Long> getNewStoreIds() {
         return newStoreIds;

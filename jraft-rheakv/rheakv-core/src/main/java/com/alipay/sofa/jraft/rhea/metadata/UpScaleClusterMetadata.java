@@ -22,6 +22,8 @@ public class UpScaleClusterMetadata extends ScheduleTaskMetadata {
     private static final long       serialVersionUID = 1762452908908603860L;
 
     private int                     taskStatusCode;
+    private MigrationPlan           migrationPlan;
+    private List<Store>             modifyStores;
     private List<ChangePeerSubTask> changePeerSubTasks;
 
     public int getTaskStatusCode() {
@@ -32,8 +34,33 @@ public class UpScaleClusterMetadata extends ScheduleTaskMetadata {
         this.taskStatusCode = taskStatusCode;
     }
 
+    public MigrationPlan getMigrationPlan() {
+        return migrationPlan;
+    }
+
+    public void setMigrationPlan(final MigrationPlan migrationPlan) {
+        this.migrationPlan = migrationPlan;
+    }
+
+    public List<Store> getModifyStores() {
+        return modifyStores;
+    }
+
+    public void setModifyStores(final List<Store> modifyStores) {
+        this.modifyStores = modifyStores;
+    }
+
+    public List<ChangePeerSubTask> getChangePeerSubTasks() {
+        return changePeerSubTasks;
+    }
+
+    public void setChangePeerSubTasks(final List<ChangePeerSubTask> changePeerSubTasks) {
+        this.changePeerSubTasks = changePeerSubTasks;
+    }
+
     public enum TaskStatus {
-        INIT(0), RESET_STORE(1), PREPARE_CHANGE_PEER(2), CHANGE_PEER(3), FINISHED(4), ABORT(5);
+        INIT(0), RESET_STORE(1), WAIT_RESET_STORE_FINISH(2), PREPARE_CHANGE_PEER(3), CHANGE_PEER(4), FINISHED(5), ABORT(
+                                                                                                                        6);
 
         private final int code;
 

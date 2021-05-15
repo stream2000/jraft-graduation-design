@@ -23,15 +23,21 @@ import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
 import com.alipay.sofa.jraft.rhea.client.pd.PlacementDriverClient;
 import com.alipay.sofa.jraft.rhea.client.pd.RemotePlacementDriverClient;
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
+import com.alipay.sofa.jraft.rhea.metadata.MigrationPlan;
 import com.alipay.sofa.jraft.rhea.metadata.Store;
+import com.alipay.sofa.jraft.rhea.util.Lists;
 import com.alipay.sofa.jraft.util.BytesUtil;
 import com.alipay.sofa.jraft.util.Endpoint;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class PdClient {
     public static void main(String[] args) {
         final Client client = new Client();
         client.init();
         //        submitRebuildRequest(client.getRheaKVStore());
+        submitUpscaleClusterRequest(client.getRheaKVStore());
         listClusterInfo(client.getRheaKVStore());
         client.shutdown();
     }
@@ -50,6 +56,21 @@ public class PdClient {
         PlacementDriverClient pdClient = rheaKVStore.getPlacementDriverClient();
         RemotePlacementDriverClient remotePdClient = (RemotePlacementDriverClient) pdClient;
         String taskId = remotePdClient.getClusterManagementRpcClient().submitRebuildStoreRequest(111, 0, 3);
+        System.out.println(taskId);
+    }
+
+    public static void submitUpscaleClusterRequest(final RheaKVStore rheaKVStore) {
+        PlacementDriverClient pdClient = rheaKVStore.getPlacementDriverClient();
+        RemotePlacementDriverClient remotePdClient = (RemotePlacementDriverClient) pdClient;
+        MigrationPlan plan = new MigrationPlan();
+        plan.setClusterId(111);
+        List<MigrationPlan.MigrationPlanEntry> migrationPlanEntries = new ArrayList<>();
+        migrationPlanEntries.add(new MigrationPlan.MigrationPlanEntry(0, 5, 1));
+        migrationPlanEntries.add(new MigrationPlan.MigrationPlanEntry(1, 6, 1));
+        migrationPlanEntries.add(new MigrationPlan.MigrationPlanEntry(2, 4, 1));
+        plan.setMigrationPlanEntries(migrationPlanEntries);
+        String taskId = remotePdClient.getClusterManagementRpcClient().submitUpscaleClusterRequest(111,
+            Lists.newArrayList(4L, 5L, 6L), plan);
         System.out.println(taskId);
     }
 

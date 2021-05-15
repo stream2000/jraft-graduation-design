@@ -364,6 +364,7 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
         metaData.setTaskId(UUID.randomUUID().toString());
         metaData.setClusterId((int) request.getClusterId());
         metaData.setTaskType(ScheduleTaskMetadata.ScheduleTaskType.UPSCALE_CLUSTER.getCode());
+        metaData.setMigrationPlan(request.getMigrationPlan());
 
         try {
             boolean result = this.metadataStore.setScheduleTaskMetadata(clusterId, metaData).get();

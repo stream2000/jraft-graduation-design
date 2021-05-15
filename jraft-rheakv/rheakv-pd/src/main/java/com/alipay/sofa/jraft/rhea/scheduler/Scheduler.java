@@ -16,9 +16,15 @@
  */
 package com.alipay.sofa.jraft.rhea.scheduler;
 
+import com.alipay.sofa.jraft.conf.Configuration;
+import com.alipay.sofa.jraft.entity.PeerId;
 import com.alipay.sofa.jraft.rhea.DefaultMetadataStore;
+import com.alipay.sofa.jraft.rhea.JRaftHelper;
 import com.alipay.sofa.jraft.rhea.MetadataStore;
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
+import com.alipay.sofa.jraft.rhea.metadata.Peer;
+import com.alipay.sofa.jraft.rhea.metadata.Region;
+import com.alipay.sofa.jraft.rhea.metadata.Store;
 import com.alipay.sofa.jraft.rhea.serialization.Serializer;
 import com.alipay.sofa.jraft.rhea.serialization.Serializers;
 
@@ -50,6 +56,18 @@ public abstract class Scheduler implements Runnable {
         if (!isStopped) {
             isStopped = true;
             this.stopHook.run();
+        }
+    }
+
+    public static void addToStorePeerToRegionConf(Store toStore) {
+        for (final Region region : toStore.getRegions()) {
+            Peer toStorePeer = new Peer(region.getId(), toStore.getId(), toStore.getEndpoint());
+            PeerId toStorePeerId = JRaftHelper.toJRaftPeerId(toStorePeer);
+            Configuration newConf = new Configuration();
+            region.getPeers().forEach(p -> newConf.addPeer(JRaftHelper.toJRaftPeerId(p)));
+            if (!newConf.contains(toStorePeerId)) {
+                region.getPeers().add(toStorePeer);
+            }
         }
     }
 

@@ -107,7 +107,7 @@ public class RebuildStoreScheduler extends Scheduler {
 
         // step 1, overwrite the store
         if (taskMeta.getResetStoreSubTask().getTaskState()
-                .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE)) {
+            .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.INIT_STATE)) {
             Store toStoreMeta = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getToStoreId());
             Store fromStoreMeta = taskMeta.getFromStoreMeta();
             // record prevData
@@ -116,24 +116,16 @@ public class RebuildStoreScheduler extends Scheduler {
 
             toStoreMeta.setRegions(fromStoreMeta.getRegions());
             // add toStore peer to conf
-            for (final Region region : toStoreMeta.getRegions()) {
-                Peer toStorePeer = new Peer(region.getId(), toStoreMeta.getId(), toStoreMeta.getEndpoint());
-                PeerId toStorePeerId = JRaftHelper.toJRaftPeerId(toStorePeer);
-                Configuration newConf = new Configuration();
-                region.getPeers().forEach(p -> newConf.addPeer(JRaftHelper.toJRaftPeerId(p)));
-                if (!newConf.contains(toStorePeerId)) {
-                    region.getPeers().add(toStorePeer);
-                }
-            }
+            addToStorePeerToRegionConf(toStoreMeta);
             toStoreMeta.setNeedOverwrite(true);
 
             taskMeta.getResetStoreSubTask().setTaskState(RebuildStoreTaskMetaData.ResetStoreSubTask.RESET_STATE);
 
             // atomic update two meta data
             CASEntry storeMetaCASEntry = new CASEntry(BytesUtil.writeUtf8(storeMetaKey), storeMetaExpect,
-                    serializer.writeObject(toStoreMeta));
+                serializer.writeObject(toStoreMeta));
             CASEntry taskMetaCASEntry = new CASEntry(BytesUtil.writeUtf8(taskKey), taskMetaExpect,
-                    serializer.writeObject(taskMeta));
+                serializer.writeObject(taskMeta));
             boolean ok = this.rheaKVStore.bCompareAndPutAll(Lists.newArrayList(storeMetaCASEntry, taskMetaCASEntry));
             if (!ok) {
                 LOG.warn("Task {} was modified by another process", taskMeta.getTaskId());
@@ -143,15 +135,15 @@ public class RebuildStoreScheduler extends Scheduler {
         }
 
         if (taskMeta.getResetStoreSubTask().getTaskState()
-                .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.RESET_STATE)) {
+            .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.RESET_STATE)) {
             byte[] taskMetaExpect = this.serializer.writeObject(taskMeta);
             int sleepDuration = 1000;
             while (!isStopped) {
                 try {
                     Store currentStore = metadataStore.getStoreInfo(taskMeta.getClusterId(), taskMeta.getToStoreId());
                     if (!currentStore.isNeedOverwrite()) {
-                        taskMeta.getResetStoreSubTask()
-                                .setTaskState(RebuildStoreTaskMetaData.ResetStoreSubTask.WAIT_UPDATE_STATE);
+                        taskMeta.getResetStoreSubTask().setTaskState(
+                            RebuildStoreTaskMetaData.ResetStoreSubTask.WAIT_UPDATE_STATE);
                         if (!CASUpdateTaskMeta(taskMetaExpect)) {
                             return;
                         }
@@ -170,7 +162,7 @@ public class RebuildStoreScheduler extends Scheduler {
         }
 
         if (taskMeta.getResetStoreSubTask().getTaskState()
-                .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.WAIT_UPDATE_STATE)) {
+            .equalsIgnoreCase(RebuildStoreTaskMetaData.ResetStoreSubTask.WAIT_UPDATE_STATE)) {
             byte[] taskMetaExpect = this.serializer.writeObject(taskMeta);
             taskMeta.getResetStoreSubTask().setTaskState(RebuildStoreTaskMetaData.ResetStoreSubTask.FINISH_STATE);
             taskMeta.setTaskStatusCode(TaskStatus.PREPARE_CHANGE_PEER.getCode());
