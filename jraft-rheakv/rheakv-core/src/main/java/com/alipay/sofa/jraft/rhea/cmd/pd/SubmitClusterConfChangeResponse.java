@@ -14,24 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alipay.sofa.jraft.graduationdesign;
+package com.alipay.sofa.jraft.rhea.cmd.pd;
 
-import java.io.IOException;
-
-public class NewServerBootstrap extends RheaKVTestBootstrap {
-    private static final String[] CONF = { "/kv/rhea_test_4.yaml", //
-                                       };
-
-    public static void main(String[] args) throws Exception {
-        final MainRheaKVBootstrap server = new MainRheaKVBootstrap();
-        server.start(CONF, false);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                server.shutdown();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
-    }
+public class SubmitClusterConfChangeResponse extends BaseResponse<String> {
+    private static final long serialVersionUID = 1182132736584630726L;
 }

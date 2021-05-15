@@ -21,6 +21,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import com.alipay.sofa.jraft.rhea.cmd.pd.RebuildStoreRequest;
+import com.alipay.sofa.jraft.rhea.cmd.pd.UpScaleClusterRequest;
 import com.alipay.sofa.jraft.rhea.scheduler.SchedulerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -222,6 +223,8 @@ public class PlacementDriverServer implements Lifecycle<PlacementDriverServerOpt
         rpcServer.registerProcessor(new PlacementDriverProcessor<>(CreateRegionIdRequest.class,
             this.placementDriverService, this.pdExecutor));
         rpcServer.registerProcessor(new PlacementDriverProcessor<>(RebuildStoreRequest.class,
+            this.placementDriverService, this.pdExecutor));
+        rpcServer.registerProcessor(new PlacementDriverProcessor<>(UpScaleClusterRequest.class,
             this.placementDriverService, this.pdExecutor));
     }
 

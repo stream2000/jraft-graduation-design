@@ -28,6 +28,7 @@ import com.alipay.sofa.jraft.rhea.cmd.pd.RebuildStoreRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.RegionHeartbeatRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.SetStoreInfoRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.StoreHeartbeatRequest;
+import com.alipay.sofa.jraft.rhea.cmd.pd.UpScaleClusterRequest;
 import com.alipay.sofa.jraft.rhea.errors.RheaRuntimeException;
 import com.alipay.sofa.jraft.rpc.RpcContext;
 import com.alipay.sofa.jraft.rpc.RpcProcessor;
@@ -93,6 +94,9 @@ public class PlacementDriverProcessor<T extends BaseRequest> implements RpcProce
                 break;
             case BaseRequest.REBUILD_STORE:
                 this.placementDriverService.handleRebuildStoreRequest((RebuildStoreRequest) request, closure);
+                break;
+            case BaseRequest.UPSCALE_CLUSTER:
+                this.placementDriverService.handleUpscaleClusterRequest((UpScaleClusterRequest) request, closure);
                 break;
             default:
                 throw new RheaRuntimeException("Unsupported request type: " + request.getClass().getName());

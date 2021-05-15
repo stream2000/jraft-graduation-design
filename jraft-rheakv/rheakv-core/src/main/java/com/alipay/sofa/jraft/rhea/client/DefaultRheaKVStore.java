@@ -424,6 +424,7 @@ public class DefaultRheaKVStore implements RheaKVStore {
             request.setReadOnlySafe(readOnlySafe);
             request.setRegionId(region.getId());
             request.setRegionEpoch(region.getRegionEpoch());
+            // remote call
             this.rheaKVRpcService.callAsyncWithRpc(request, closure, lastCause, requireLeader);
         }
     }

@@ -24,13 +24,14 @@ import com.alipay.sofa.jraft.rhea.client.pd.PlacementDriverClient;
 import com.alipay.sofa.jraft.rhea.client.pd.RemotePlacementDriverClient;
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
 import com.alipay.sofa.jraft.rhea.metadata.Store;
+import com.alipay.sofa.jraft.util.BytesUtil;
 import com.alipay.sofa.jraft.util.Endpoint;
 
 public class PdClient {
     public static void main(String[] args) {
         final Client client = new Client();
         client.init();
-//        submitRebuildRequest(client.getRheaKVStore());
+        //        submitRebuildRequest(client.getRheaKVStore());
         listClusterInfo(client.getRheaKVStore());
         client.shutdown();
     }
@@ -40,6 +41,7 @@ public class PdClient {
         RemotePlacementDriverClient remotePdClient = (RemotePlacementDriverClient) pdClient;
         Endpoint leaderEndpoint = remotePdClient.getPdLeader(true, 10000);
         System.out.println(leaderEndpoint);
+        rheaKVStore.get(BytesUtil.writeUtf8("hello"));
         Cluster cluster = remotePdClient.getMetadataRpcClient().getClusterInfo(111);
         printCluster(cluster);
     }

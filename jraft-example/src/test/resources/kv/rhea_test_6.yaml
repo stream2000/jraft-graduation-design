@@ -1,0 +1,19 @@
+##RheaKVStoreOptions
+---
+clusterId: 111
+clusterName: rhea_pd_test
+
+placementDriverOptions:
+  fake: false
+  pdGroupId: pd_test--1
+  initialPdServerList: 127.0.0.1:8180,127.0.0.1:8181,127.0.0.1:8182
+
+storeEngineOptions:
+  rocksDBOptions:
+    dbPath: rhea_pd_db/
+  raftDataPath: rhea_pd_raft/
+  serverAddress:
+    ip: 127.0.0.1
+    port: 18186
+
+  leastKeysOnSplit: 10

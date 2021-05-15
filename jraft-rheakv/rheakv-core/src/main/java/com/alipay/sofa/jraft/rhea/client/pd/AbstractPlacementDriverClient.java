@@ -293,6 +293,7 @@ public abstract class AbstractPlacementDriverClient implements PlacementDriverCl
             // or in the 'leader-transfer' state, it needs to be re-tried
             for (;;) {
                 try {
+                    // how to refresh
                     final Status st = routeTable.refreshConfiguration(this.cliClientService, raftGroupId, 5000);
                     if (st.isOk()) {
                         break;

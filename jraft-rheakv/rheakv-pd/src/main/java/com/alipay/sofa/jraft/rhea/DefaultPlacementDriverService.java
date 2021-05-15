@@ -28,13 +28,14 @@ import com.alipay.sofa.jraft.rhea.cmd.pd.GetStoreIdResponse;
 import com.alipay.sofa.jraft.rhea.cmd.pd.GetStoreInfoRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.GetStoreInfoResponse;
 import com.alipay.sofa.jraft.rhea.cmd.pd.RebuildStoreRequest;
-import com.alipay.sofa.jraft.rhea.cmd.pd.RebuildStoreResponse;
+import com.alipay.sofa.jraft.rhea.cmd.pd.SubmitClusterConfChangeResponse;
 import com.alipay.sofa.jraft.rhea.cmd.pd.RegionHeartbeatRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.RegionHeartbeatResponse;
 import com.alipay.sofa.jraft.rhea.cmd.pd.SetStoreInfoRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.SetStoreInfoResponse;
 import com.alipay.sofa.jraft.rhea.cmd.pd.StoreHeartbeatRequest;
 import com.alipay.sofa.jraft.rhea.cmd.pd.StoreHeartbeatResponse;
+import com.alipay.sofa.jraft.rhea.cmd.pd.UpScaleClusterRequest;
 import com.alipay.sofa.jraft.rhea.errors.Errors;
 import com.alipay.sofa.jraft.rhea.metadata.Cluster;
 import com.alipay.sofa.jraft.rhea.metadata.Instruction;
@@ -310,7 +311,7 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
     public void handleRebuildStoreRequest(final RebuildStoreRequest request,
                                           final RequestProcessClosure<BaseRequest, BaseResponse> closure) {
         final long clusterId = request.getClusterId();
-        final RebuildStoreResponse response = new RebuildStoreResponse();
+        final SubmitClusterConfChangeResponse response = new SubmitClusterConfChangeResponse();
         response.setClusterId(clusterId);
         LOG.info("Handling {}.", request);
         if (!this.isLeader) {
@@ -342,6 +343,12 @@ public class DefaultPlacementDriverService implements PlacementDriverService, Le
             response.setError(Errors.forException(t));
         }
         closure.sendResponse(response);
+    }
+
+    @Override
+    public void handleUpscaleClusterRequest(final UpScaleClusterRequest request,
+                                            final RequestProcessClosure<BaseRequest, BaseResponse> closure) {
+
     }
 
     @Override

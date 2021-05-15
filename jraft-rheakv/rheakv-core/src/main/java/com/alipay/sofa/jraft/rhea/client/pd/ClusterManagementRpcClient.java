@@ -21,8 +21,11 @@ import com.alipay.sofa.jraft.rhea.client.failover.FailoverClosure;
 import com.alipay.sofa.jraft.rhea.client.failover.RetryRunner;
 import com.alipay.sofa.jraft.rhea.client.failover.impl.FailoverClosureImpl;
 import com.alipay.sofa.jraft.rhea.cmd.pd.RebuildStoreRequest;
+import com.alipay.sofa.jraft.rhea.cmd.pd.UpScaleClusterRequest;
 import com.alipay.sofa.jraft.rhea.errors.Errors;
+import com.alipay.sofa.jraft.util.Requires;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ClusterManagementRpcClient {
@@ -46,10 +49,28 @@ public class ClusterManagementRpcClient {
         final RetryRunner retryRunner = retryCause -> internalSubmitRebuildStoreRequest(clusterId, fromStoreId,
                 toStoreId, future, retriesLeft - 1, retryCause);
         final FailoverClosure<String> closure = new FailoverClosureImpl<>(future, retriesLeft, retryRunner);
-        final RebuildStoreRequest   request = new RebuildStoreRequest();
+        final RebuildStoreRequest request = new RebuildStoreRequest();
         request.setClusterId(clusterId);
         request.setFromStoreId(fromStoreId);
         request.setToStoreId(toStoreId);
+        this.pdRpcService.callPdServerWithRpc(request, closure, lastCause);
+    }
+
+    public String submitUpscaleClusterRequest(final long clusterId, List<Long> newStoreIds) {
+        Requires.requireNonNull(newStoreIds);
+        final CompletableFuture<String> future = new CompletableFuture<>();
+        internalSubmitUpscaleClusterRequest(clusterId, newStoreIds, future, this.failoverRetries - 1, null);
+        return null;
+    }
+
+    public void internalSubmitUpscaleClusterRequest(final long clusterId, List<Long> newStoreIds,
+                                                  final CompletableFuture<String> future, final int retriesLeft,
+                                                  final Errors lastCause) {
+        final RetryRunner retryRunner = retryCause -> internalSubmitUpscaleClusterRequest(clusterId, newStoreIds, future, retriesLeft - 1, retryCause);
+        final FailoverClosure<String> closure = new FailoverClosureImpl<>(future, retriesLeft, retryRunner);
+        final UpScaleClusterRequest request = new UpScaleClusterRequest();
+        request.setClusterId(clusterId);
+        request.setNewStoreIds(newStoreIds);
         this.pdRpcService.callPdServerWithRpc(request, closure, lastCause);
     }
 }
