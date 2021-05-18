@@ -44,10 +44,10 @@ import java.util.Set;
 import java.util.UUID;
 
 public class UpscaleClusterScheduler extends Scheduler {
-    private static final Logger LOG = LoggerFactory.getLogger(UpscaleClusterScheduler.class);
+    private static final Logger          LOG = LoggerFactory.getLogger(UpscaleClusterScheduler.class);
 
     private final UpScaleClusterMetadata taskMeta;
-    private final String taskKey;
+    private final String                 taskKey;
 
     public UpscaleClusterScheduler(final MetadataStore metadataStore, UpScaleClusterMetadata taskMeta) {
         super(metadataStore);
@@ -60,8 +60,8 @@ public class UpscaleClusterScheduler extends Scheduler {
         if (isStopped) {
             return;
         }
-        UpScaleClusterMetadata.TaskStatus status = UpScaleClusterMetadata.TaskStatus
-                .codeOf(taskMeta.getTaskStatusCode());
+        UpScaleClusterMetadata.TaskStatus status = UpScaleClusterMetadata.TaskStatus.codeOf(taskMeta
+            .getTaskStatusCode());
         switch (status) {
             case INIT:
                 processInit();
@@ -129,8 +129,8 @@ public class UpscaleClusterScheduler extends Scheduler {
         for (MigrationPlanEntry entry : taskMeta.getMigrationPlan().getMigrationPlanEntries()) {
             if (!modifyStores.containsKey(entry.getToStoreId())) {
                 modifyStores.put(entry.getToStoreMeta().getId(), entry.getToStoreMeta());
-                modifyStoreExpects
-                        .put(entry.getToStoreMeta().getId(), this.serializer.writeObject(entry.getToStoreMeta()));
+                modifyStoreExpects.put(entry.getToStoreMeta().getId(),
+                    this.serializer.writeObject(entry.getToStoreMeta()));
             }
             Store toStoreMeta = modifyStores.get(entry.getToStoreId());
             if (toStoreMeta.getRegions() == null) {
@@ -144,14 +144,14 @@ public class UpscaleClusterScheduler extends Scheduler {
             byte[] toStoreExpect = modifyStoreExpects.get(toStoreMeta.getId());
             addToStorePeerToRegionConf(toStoreMeta);
             toStoreMeta.setNeedOverwrite(true);
-            casEntries.add(new CASEntry(BytesUtil.writeUtf8(storeKey), toStoreExpect,
-                    this.serializer.writeObject(toStoreMeta)));
+            casEntries.add(new CASEntry(BytesUtil.writeUtf8(storeKey), toStoreExpect, this.serializer
+                .writeObject(toStoreMeta)));
         }
 
         taskMeta.setModifyStores(Lists.newArrayList(modifyStores.values()));
         taskMeta.setTaskStatusCode(UpScaleClusterMetadata.TaskStatus.WAIT_RESET_STORE_FINISH.getCode());
         casEntries
-                .add(new CASEntry(BytesUtil.writeUtf8(taskKey), taskMetaExpect, this.serializer.writeObject(taskMeta)));
+            .add(new CASEntry(BytesUtil.writeUtf8(taskKey), taskMetaExpect, this.serializer.writeObject(taskMeta)));
 
         boolean ok = this.rheaKVStore.bCompareAndPutAll(casEntries);
         if (!ok) {

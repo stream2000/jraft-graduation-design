@@ -61,6 +61,7 @@
         <java.source.version>1.8</java.source.version>
         <java.target.version>1.8</java.target.version>
         <jctools.version>2.1.1</jctools.version>
+        <jline.version>3.20.0</jline.version>
         <jmh.version>1.20</jmh.version>
         <jna.version>5.5.0</jna.version>
         <jsr305.version>3.0.2</jsr305.version>
@@ -70,6 +71,7 @@
         <main.user.dir>${user.dir}</main.user.dir>
         <metrics.version>4.0.2</metrics.version>
         <mockito.version>1.9.5</mockito.version>
+        <picocli.version>4.6.1</picocli.version>
         <powermock.version>1.6.0</powermock.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.encoding>UTF-8</project.encoding>
@@ -256,6 +258,20 @@
                 <version>${jmh.version}</version>
                 <scope>test</scope>
             </dependency>
+
+            <!--Jline support -->
+            <dependency>
+                <groupId>org.jline</groupId>
+                <artifactId>jline</artifactId>
+                <version>${jline.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>${picocli.version}</version>
+            </dependency>
+
             <!-- test -->
             <dependency>
                 <groupId>junit</groupId>
