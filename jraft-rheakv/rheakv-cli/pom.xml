@@ -21,12 +21,8 @@
             <artifactId>jraft-rheakv-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline</artifactId>
-        </dependency>
-        <dependency>
             <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
+            <artifactId>picocli-shell-jline3</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -43,6 +39,23 @@
             <artifactId>jackson-dataformat-yaml</artifactId>
             <version>2.10.4</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-jcl</artifactId>
         </dependency>
 
     </dependencies>
@@ -76,7 +89,7 @@
                             </descriptorRefs>
                             <archive>
                                 <manifest>
-                                    <mainClass>com.alipay.sofa.jraft.rhea.cli.TelClient</mainClass>
+                                    <mainClass>com.alipay.sofa.jraft.rhea.cli.Client</mainClass>
                                 </manifest>
                             </archive>
                         </configuration>

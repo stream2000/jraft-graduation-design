@@ -58,10 +58,11 @@
         <hessian.version>3.3.6</hessian.version>
         <jacoco.path>${project.build.directory}/jacoco.exec</jacoco.path>
         <jacoco.skip>true</jacoco.skip>
+        <jansi.version>1.18</jansi.version>
         <java.source.version>1.8</java.source.version>
         <java.target.version>1.8</java.target.version>
         <jctools.version>2.1.1</jctools.version>
-        <jline.version>3.20.0</jline.version>
+        <jline-picocli.version>4.6.1</jline-picocli.version>
         <jmh.version>1.20</jmh.version>
         <jna.version>5.5.0</jna.version>
         <jsr305.version>3.0.2</jsr305.version>
@@ -69,7 +70,7 @@
         <junit.version>4.13.1</junit.version>
         <log4j.version>2.13.2</log4j.version>
         <main.user.dir>${user.dir}</main.user.dir>
-        <metrics.version>4.0.2</metrics.version>
+        <metrics.version>4.2.0</metrics.version>
         <mockito.version>1.9.5</mockito.version>
         <picocli.version>4.6.1</picocli.version>
         <powermock.version>1.6.0</powermock.version>
@@ -261,15 +262,15 @@
 
             <!--Jline support -->
             <dependency>
-                <groupId>org.jline</groupId>
-                <artifactId>jline</artifactId>
-                <version>${jline.version}</version>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli-shell-jline3</artifactId>
+                <version>${jline-picocli.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>info.picocli</groupId>
-                <artifactId>picocli</artifactId>
-                <version>${picocli.version}</version>
+                <groupId>org.fusesource.jansi</groupId>
+                <artifactId>jansi</artifactId>
+                <version>${jansi.version}</version>
             </dependency>
 
             <!-- test -->
